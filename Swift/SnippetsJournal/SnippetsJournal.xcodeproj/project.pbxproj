@@ -11,6 +11,10 @@
 		84C3A78B2FA8601A000E1F44 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C3A78A2FA8601A000E1F44 /* ContentView.swift */; };
 		84C3A78D2FA8601E000E1F44 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 84C3A78C2FA8601E000E1F44 /* Assets.xcassets */; };
 		84C3A7902FA8601E000E1F44 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 84C3A78F2FA8601E000E1F44 /* Preview Assets.xcassets */; };
+		84C3A7972FA8727B000E1F44 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C3A7962FA8727B000E1F44 /* HomeView.swift */; };
+		84C3A79B2FA87558000E1F44 /* PatrickHand-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 84C3A79A2FA87557000E1F44 /* PatrickHand-Regular.ttf */; };
+		84C3A79E2FA9A145000E1F44 /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C3A79D2FA9A145000E1F44 /* JournalView.swift */; };
+		84C3A7A02FA9AA3B000E1F44 /* JournalEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C3A79F2FA9AA3B000E1F44 /* JournalEntryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +23,11 @@
 		84C3A78A2FA8601A000E1F44 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		84C3A78C2FA8601E000E1F44 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		84C3A78F2FA8601E000E1F44 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		84C3A7962FA8727B000E1F44 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		84C3A79A2FA87557000E1F44 /* PatrickHand-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PatrickHand-Regular.ttf"; sourceTree = "<group>"; };
+		84C3A79C2FA875FA000E1F44 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		84C3A79D2FA9A145000E1F44 /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
+		84C3A79F2FA9AA3B000E1F44 /* JournalEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalEntryView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,10 +60,15 @@
 		84C3A7872FA8601A000E1F44 /* SnippetsJournal */ = {
 			isa = PBXGroup;
 			children = (
+				84C3A79C2FA875FA000E1F44 /* Info.plist */,
+				84C3A79A2FA87557000E1F44 /* PatrickHand-Regular.ttf */,
 				84C3A7882FA8601A000E1F44 /* SnippetsJournalApp.swift */,
 				84C3A78A2FA8601A000E1F44 /* ContentView.swift */,
 				84C3A78C2FA8601E000E1F44 /* Assets.xcassets */,
 				84C3A78E2FA8601E000E1F44 /* Preview Content */,
+				84C3A7962FA8727B000E1F44 /* HomeView.swift */,
+				84C3A79D2FA9A145000E1F44 /* JournalView.swift */,
+				84C3A79F2FA9AA3B000E1F44 /* JournalEntryView.swift */,
 			);
 			path = SnippetsJournal;
 			sourceTree = "<group>";
@@ -127,6 +141,7 @@
 			files = (
 				84C3A7902FA8601E000E1F44 /* Preview Assets.xcassets in Resources */,
 				84C3A78D2FA8601E000E1F44 /* Assets.xcassets in Resources */,
+				84C3A79B2FA87558000E1F44 /* PatrickHand-Regular.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,7 +152,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84C3A7972FA8727B000E1F44 /* HomeView.swift in Sources */,
+				84C3A7A02FA9AA3B000E1F44 /* JournalEntryView.swift in Sources */,
 				84C3A78B2FA8601A000E1F44 /* ContentView.swift in Sources */,
+				84C3A79E2FA9A145000E1F44 /* JournalView.swift in Sources */,
 				84C3A7892FA8601A000E1F44 /* SnippetsJournalApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -270,6 +288,7 @@
 				DEVELOPMENT_TEAM = Q3LD3FN8M8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SnippetsJournal/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -299,6 +318,7 @@
 				DEVELOPMENT_TEAM = Q3LD3FN8M8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SnippetsJournal/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
