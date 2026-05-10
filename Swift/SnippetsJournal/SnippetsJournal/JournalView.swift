@@ -168,7 +168,6 @@ struct OpenBookWithFlip: View {
     let coverColor: Color
     let onFlipForward: () -> Void
     let onFlipBackward: () -> Void
-    let onPageTapped: () -> Void
 
     var body: some View {
         ZStack {

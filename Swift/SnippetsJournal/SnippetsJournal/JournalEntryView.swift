@@ -73,8 +73,8 @@ struct JournalEntryView: View {
                         }
                     }
                     .padding(.horizontal, 24)
-                    .padding(.top, 60)
-                    .padding(.bottom, 16)
+                    .padding(.top, 40)
+                    .padding(.bottom, 28)
 
                     // MARK: Page Canvas
                     ZStack(alignment: .bottomLeading) {
