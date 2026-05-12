@@ -1,14 +1,9 @@
 import SwiftUI
 
-// MARK: - Journal Entry Model
-struct JournalEntry: Identifiable {
-    let id = UUID()
-    let pageNumber: Int
-}
-
 // MARK: - Journal View
 struct JournalView: View {
     let journal: Journal
+    @ObservedObject var settings: JournalSettings
     @Environment(\.dismiss) var dismiss
     @State private var currentPage = 0
     @State private var isFlipping = false
@@ -17,7 +12,6 @@ struct JournalView: View {
     @State private var selectedTab = 0
     @State private var showEntryView = false
 
-    // Sample entries — replace with real data later
     let totalPages = 6
 
     enum FlipDirection {
@@ -42,15 +36,11 @@ struct JournalView: View {
                                 .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(Color(hex: "2C2820"))
                         }
-
                         Spacer()
-
-                        Text(journal.title.replacingOccurrences(of: "\n", with: " "))
+                        Text(settings.title)
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(Color(hex: "2C2820"))
-
                         Spacer()
-
                         Button(action: {}) {
                             ZStack {
                                 Circle()
@@ -73,23 +63,22 @@ struct JournalView: View {
 
                     // MARK: Book
                     ZStack {
-                        // Stacked pages behind
                         ForEach((0..<4).reversed(), id: \.self) { i in
                             StackedPageView(
                                 offset: CGFloat(i) * 4,
-                                coverColor: journal.coverColor
+                                coverColor: settings.coverColor
                             )
                             .offset(y: CGFloat(i) * 1.5)
                         }
 
-                        // Main open book with tappable pages
                         OpenBookWithFlip(
                             currentPage: $currentPage,
                             isFlipping: $isFlipping,
                             flipDirection: $flipDirection,
                             flipProgress: $flipProgress,
                             totalPages: totalPages,
-                            coverColor: journal.coverColor,
+                            coverColor: settings.coverColor,
+                            pagePattern: settings.pagePattern,
                             onFlipForward: flipForward,
                             onFlipBackward: flipBackward
                         )
@@ -121,7 +110,7 @@ struct JournalView: View {
         .ignoresSafeArea(edges: .bottom)
         .navigationBarHidden(true)
         .navigationDestination(isPresented: $showEntryView) {
-            JournalEntryView(journal: journal)
+            JournalEntryView(journal: journal, settings: settings)
         }
     }
 
@@ -129,32 +118,18 @@ struct JournalView: View {
         guard currentPage < totalPages - 1, !isFlipping else { return }
         flipDirection = .forward
         isFlipping = true
-        withAnimation(.easeInOut(duration: 0.5)) {
-            flipProgress = 1.0
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            currentPage += 1
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            flipProgress = 0
-            isFlipping = false
-        }
+        withAnimation(.easeInOut(duration: 0.5)) { flipProgress = 1.0 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { currentPage += 1 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { flipProgress = 0; isFlipping = false }
     }
 
     func flipBackward() {
         guard currentPage > 0, !isFlipping else { return }
         flipDirection = .backward
         isFlipping = true
-        withAnimation(.easeInOut(duration: 0.5)) {
-            flipProgress = 1.0
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            currentPage -= 1
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            flipProgress = 0
-            isFlipping = false
-        }
+        withAnimation(.easeInOut(duration: 0.5)) { flipProgress = 1.0 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { currentPage -= 1 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { flipProgress = 0; isFlipping = false }
     }
 }
 
@@ -166,18 +141,21 @@ struct OpenBookWithFlip: View {
     @Binding var flipProgress: Double
     let totalPages: Int
     let coverColor: Color
+    let pagePattern: PagePattern
     let onFlipForward: () -> Void
     let onFlipBackward: () -> Void
 
     var body: some View {
         ZStack {
-            // LEFT page — tap to go backward
+            // LEFT page
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.white)
                     .shadow(color: .black.opacity(0.08), radius: 8, x: -4, y: 4)
 
-                // Empty page content area
+                PagePatternView(pattern: pagePattern)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
                 VStack {
                     Spacer()
                     if currentPage == 0 {
@@ -191,17 +169,17 @@ struct OpenBookWithFlip: View {
             }
             .frame(width: 155, height: 310)
             .offset(x: -79)
-            .onTapGesture {
-                onFlipBackward()
-            }
+            .onTapGesture { onFlipBackward() }
 
-            // RIGHT page — tap to go forward
+            // RIGHT page
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.white)
                     .shadow(color: .black.opacity(0.08), radius: 8, x: 4, y: 4)
 
-                // Empty page content area
+                PagePatternView(pattern: pagePattern)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
                 VStack {
                     Spacer()
                     if currentPage == totalPages - 1 {
@@ -215,9 +193,7 @@ struct OpenBookWithFlip: View {
             }
             .frame(width: 155, height: 310)
             .offset(x: 79)
-            .onTapGesture {
-                onFlipForward()
-            }
+            .onTapGesture { onFlipForward() }
 
             // Spine shadow
             Rectangle()
@@ -234,7 +210,7 @@ struct OpenBookWithFlip: View {
                 )
                 .frame(width: 16, height: 310)
 
-            // MARK: Flipping page overlay
+            // Flipping page overlay
             if isFlipping {
                 let angle = flipDirection == .forward
                     ? -180 * flipProgress
@@ -243,17 +219,16 @@ struct OpenBookWithFlip: View {
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [
-                                Color(hex: "F5F0EA"),
-                                Color.white
-                            ],
+                            colors: [Color(hex: "F5F0EA"), Color.white],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
                     .frame(width: 155, height: 310)
                     .overlay(
-                        // Shadow on flipping page edge
+                        PagePatternView(pattern: pagePattern)
+                    )
+                    .overlay(
                         HStack {
                             Spacer()
                             Rectangle()
@@ -321,14 +296,12 @@ struct ActionButton: View {
                     .fill(isDark ? Color(hex: "2C2820") : Color(hex: "FEFAF4").opacity(0.9))
                     .frame(width: 52, height: 52)
                     .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
-
                 Circle()
                     .stroke(
                         isDark ? Color.white.opacity(0.1) : Color.white.opacity(0.8),
                         lineWidth: 1
                     )
                     .frame(width: 52, height: 52)
-
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(isDark ? .white : Color(hex: "2C2820"))
@@ -340,10 +313,11 @@ struct ActionButton: View {
 // MARK: - Preview
 struct JournalView_Previews: PreviewProvider {
     static var previews: some View {
-        JournalView(journal: Journal(
+        let journal = Journal(
             title: "Gratitude\nJournal",
             coverColor: Color(hex: "C8624A"),
             stripeColor: Color(hex: "B8927A")
-        ))
+        )
+        JournalView(journal: journal, settings: JournalSettings(journal: journal))
     }
 }

@@ -6,28 +6,31 @@ struct Journal: Identifiable {
     let title: String
     let coverColor: Color
     let stripeColor: Color
+
     func hash(into hasher: inout Hasher) {
-            hasher.combine(id)
-        }
+        hasher.combine(id)
+    }
 
     static func == (lhs: Journal, rhs: Journal) -> Bool {
-            lhs.id == rhs.id
-        }
+        lhs.id == rhs.id
+    }
 }
 
 // MARK: - Home View
 struct HomeView: View {
+    @StateObject private var store = JournalStore()
     @State private var selectedTab = 0
     @State private var currentJournalIndex = 1
     @GestureState private var dragOffset: CGFloat = 0
     @State private var selectedJournal: Journal? = nil
+    @State private var editingJournal: Journal? = nil
 
     let userName = "Olivia"
     let cardWidth: CGFloat = 275
     let cardHeight: CGFloat = 399
     let spacing: CGFloat = 16
 
-    let journals: [Journal] = [
+    @State private var journals: [Journal] = [
         Journal(title: "Vacation\nJournal",
                 coverColor: Color(hex: "7B9BB5"),
                 stripeColor: Color(hex: "6A8BA4")),
@@ -74,7 +77,6 @@ struct HomeView: View {
                             GlassButton(icon: "magnifyingglass")
                             GlassButton(icon: "plus")
                         }
-                        .padding(.top, 0)
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 52)
@@ -96,25 +98,30 @@ struct HomeView: View {
                     // MARK: Carousel
                     GeometryReader { geo in
                         let totalCardWidth = cardWidth + spacing
-
                         HStack(spacing: spacing) {
-                            ForEach(0..<journals.count, id: \.self) { index in
+                            ForEach(journals) { journal in
+                                let index = journals.firstIndex(where: { $0.id == journal.id }) ?? 0
+                                let settings = store.settings(for: journal)
                                 JournalCoverView(
-                                    journal: journals[index],
+                                    journal: journal,
+                                    settings: settings,
                                     isCenter: index == currentJournalIndex,
                                     cardWidth: cardWidth,
-                                    cardHeight: cardHeight
+                                    cardHeight: cardHeight,
+                                    onEditTapped: {
+                                        editingJournal = journal
+                                    }
                                 )
                                 .onTapGesture {
                                     if index == currentJournalIndex {
-                                        selectedJournal = journals[index]
+                                        selectedJournal = journal
                                     }
                                 }
                             }
                         }
                         .frame(maxHeight: .infinity, alignment: .center)
                         .offset(x: CGFloat(geo.size.width - cardWidth) / 2
-                                - CGFloat(currentJournalIndex) * totalCardWidth
+                                - CGFloat(currentJournalIndex) * (cardWidth + spacing)
                                 + dragOffset)
                         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: currentJournalIndex)
                         .gesture(
@@ -163,7 +170,15 @@ struct HomeView: View {
             set: { if !$0 { selectedJournal = nil } }
         )) {
             if let journal = selectedJournal {
-                JournalView(journal: journal)
+                JournalView(journal: journal, settings: store.settings(for: journal))
+            }
+        }
+        .navigationDestination(isPresented: Binding(
+            get: { editingJournal != nil },
+            set: { if !$0 { editingJournal = nil } }
+        )) {
+            if let journal = editingJournal {
+                EditJournalView(journal: journal, settings: store.settings(for: journal))
             }
         }
     }
@@ -172,15 +187,18 @@ struct HomeView: View {
 // MARK: - Journal Cover View
 struct JournalCoverView: View {
     let journal: Journal
+    @ObservedObject var settings: JournalSettings
     let isCenter: Bool
     let cardWidth: CGFloat
     let cardHeight: CGFloat
+    var onEditTapped: (() -> Void)? = nil
 
     var body: some View {
         ZStack {
-            StripedCover(
-                baseColor: journal.coverColor,
-                stripeColor: journal.stripeColor
+            CoverPatternView(
+                pattern: settings.coverPattern,
+                baseColor: settings.coverColor,
+                patternColor: settings.patternColor
             )
             .clipShape(JournalCoverShape(cornerRadius: 20))
             .shadow(
@@ -199,7 +217,43 @@ struct JournalCoverView: View {
                 .allowsHitTesting(false)
 
             if isCenter {
-                StarLabel(title: journal.title)
+                ZStack {
+                    Image("journalStar")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 170, height: 170)
+                        .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 2)
+
+                    Text(settings.title)
+                        .font(.custom("PatrickHand-Regular", size: 32))
+                        .foregroundColor(Color(hex: "2C2820"))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(2)
+                        .frame(width: 110)
+                }
+            }
+
+            if isCenter {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: { onEditTapped?() }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(hex: "FEFAF4").opacity(0.9))
+                                    .frame(width: 36, height: 36)
+                                    .background(Circle().fill(.ultraThinMaterial))
+                                Image(systemName: "slider.horizontal.3")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "2C2820"))
+                            }
+                            .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+                        }
+                        .padding(.top, 14)
+                        .padding(.trailing, 14)
+                    }
+                    Spacer()
+                }
             }
         }
         .frame(width: cardWidth, height: cardHeight)
@@ -208,7 +262,7 @@ struct JournalCoverView: View {
     }
 }
 
-// MARK: - Striped Cover
+// MARK: - Striped Cover (kept for backward compat)
 struct StripedCover: View {
     let baseColor: Color
     let stripeColor: Color
@@ -240,7 +294,7 @@ struct StripedCover: View {
     }
 }
 
-// MARK: - Journal Cover Shape (flat left, rounded right)
+// MARK: - Journal Cover Shape
 struct JournalCoverShape: Shape {
     var cornerRadius: CGFloat = 20
 
@@ -338,15 +392,54 @@ struct GlassButton: View {
     }
 }
 
+// MARK: - Custom Prompt Icon
+struct PromptTabIcon: View {
+    var color: Color
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 2)
+                .frame(width: 10, height: 10)
+                .offset(x: -6, y: 6)
+            RoundedRectangle(cornerRadius: 2)
+                .frame(width: 10, height: 10)
+                .offset(x: -6, y: -6)
+            RoundedRectangle(cornerRadius: 2)
+                .frame(width: 10, height: 10)
+                .offset(x: 6, y: 6)
+            RoundedRectangle(cornerRadius: 1.5)
+                .frame(width: 9, height: 9)
+                .rotationEffect(.degrees(45))
+                .offset(x: 6, y: -6)
+        }
+        .foregroundColor(color)
+        .frame(width: 24, height: 24)
+    }
+}
+
 // MARK: - Tab Bar
 struct TabBarView: View {
     @Binding var selectedTab: Int
 
     var body: some View {
         HStack(spacing: 0) {
-            TabBarItem(icon: "house.fill",     label: "Home",    isSelected: selectedTab == 0) { selectedTab = 0 }
-            TabBarItem(icon: "bubble.left",    label: "Prompt",  isSelected: selectedTab == 1) { selectedTab = 1 }
-            TabBarItem(icon: "chart.bar.fill", label: "Library", isSelected: selectedTab == 2) { selectedTab = 2 }
+            TabBarItem(icon: "house.fill", label: "Home", isSelected: selectedTab == 0) {
+                selectedTab = 0
+            }
+            Button(action: { selectedTab = 1 }) {
+                VStack(spacing: 4) {
+                    PromptTabIcon(
+                        color: selectedTab == 1 ? Color(hex: "2C2820") : Color(hex: "A89072")
+                    )
+                    Text("Prompt")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(selectedTab == 1 ? Color(hex: "2C2820") : Color(hex: "A89072"))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            TabBarItem(icon: "chart.bar.fill", label: "Library", isSelected: selectedTab == 2) {
+                selectedTab = 2
+            }
         }
         .padding(.top, 12)
         .padding(.bottom, 28)
