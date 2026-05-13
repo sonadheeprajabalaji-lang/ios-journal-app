@@ -24,6 +24,7 @@ struct HomeView: View {
     @GestureState private var dragOffset: CGFloat = 0
     @State private var selectedJournal: Journal? = nil
     @State private var editingJournal: Journal? = nil
+    @State private var showPrompt = false
 
     let userName = "Olivia"
     let cardWidth: CGFloat = 275
@@ -121,7 +122,7 @@ struct HomeView: View {
                         }
                         .frame(maxHeight: .infinity, alignment: .center)
                         .offset(x: CGFloat(geo.size.width - cardWidth) / 2
-                                - CGFloat(currentJournalIndex) * (cardWidth + spacing)
+                                - CGFloat(currentJournalIndex) * totalCardWidth
                                 + dragOffset)
                         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: currentJournalIndex)
                         .gesture(
@@ -165,6 +166,11 @@ struct HomeView: View {
         }
         .ignoresSafeArea(edges: .bottom)
         .navigationBarHidden(true)
+        // Prompt navigation
+        .navigationDestination(isPresented: $showPrompt) {
+            PromptView()
+        }
+        // Journal navigation
         .navigationDestination(isPresented: Binding(
             get: { selectedJournal != nil },
             set: { if !$0 { selectedJournal = nil } }
@@ -173,12 +179,23 @@ struct HomeView: View {
                 JournalView(journal: journal, settings: store.settings(for: journal))
             }
         }
+        // Edit journal navigation
         .navigationDestination(isPresented: Binding(
             get: { editingJournal != nil },
             set: { if !$0 { editingJournal = nil } }
         )) {
             if let journal = editingJournal {
                 EditJournalView(journal: journal, settings: store.settings(for: journal))
+            }
+        }
+        // Prompt tab trigger
+        .onChange(of: selectedTab) { newValue in
+            if newValue == 1 {
+                showPrompt = true
+                // Reset tab so it can be tapped again next time
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    selectedTab = 0
+                }
             }
         }
     }
@@ -262,7 +279,7 @@ struct JournalCoverView: View {
     }
 }
 
-// MARK: - Striped Cover (kept for backward compat)
+// MARK: - Striped Cover
 struct StripedCover: View {
     let baseColor: Color
     let stripeColor: Color

@@ -19,6 +19,8 @@
 		84C3A79B2FA87558000E1F44 /* PatrickHand-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 84C3A79A2FA87557000E1F44 /* PatrickHand-Regular.ttf */; };
 		84C3A79E2FA9A145000E1F44 /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C3A79D2FA9A145000E1F44 /* JournalView.swift */; };
 		84C3A7A02FA9AA3B000E1F44 /* JournalEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C3A79F2FA9AA3B000E1F44 /* JournalEntryView.swift */; };
+		84D7FC0E2FB3FC5E00E24ED0 /* PromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84D7FC0D2FB3FC5E00E24ED0 /* PromptView.swift */; };
+		84D7FC102FB4119300E24ED0 /* JournalPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84D7FC0F2FB4119300E24ED0 /* JournalPickerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +38,8 @@
 		84C3A79C2FA875FA000E1F44 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		84C3A79D2FA9A145000E1F44 /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
 		84C3A79F2FA9AA3B000E1F44 /* JournalEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalEntryView.swift; sourceTree = "<group>"; };
+		84D7FC0D2FB3FC5E00E24ED0 /* PromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptView.swift; sourceTree = "<group>"; };
+		84D7FC0F2FB4119300E24ED0 /* JournalPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalPickerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,6 +84,8 @@
 				8436C16E2FB16D79008CAB4E /* EditCoverView.swift */,
 				8436C1742FB1B0DA008CAB4E /* ColorExtensions.swift */,
 				8436C1722FB1AC9A008CAB4E /* JournalStore.swift */,
+				84D7FC0D2FB3FC5E00E24ED0 /* PromptView.swift */,
+				84D7FC0F2FB4119300E24ED0 /* JournalPickerView.swift */,
 				8436C1702FB1A826008CAB4E /* EditJournalView.swift */,
 			);
 			path = SnippetsJournal;
@@ -168,10 +174,12 @@
 				84C3A7A02FA9AA3B000E1F44 /* JournalEntryView.swift in Sources */,
 				84C3A78B2FA8601A000E1F44 /* ContentView.swift in Sources */,
 				8436C1712FB1A826008CAB4E /* EditJournalView.swift in Sources */,
+				84D7FC102FB4119300E24ED0 /* JournalPickerView.swift in Sources */,
 				84C3A79E2FA9A145000E1F44 /* JournalView.swift in Sources */,
 				8436C1752FB1B0DB008CAB4E /* ColorExtensions.swift in Sources */,
 				8436C1732FB1AC9A008CAB4E /* JournalStore.swift in Sources */,
 				8436C16F2FB16D79008CAB4E /* EditCoverView.swift in Sources */,
+				84D7FC0E2FB3FC5E00E24ED0 /* PromptView.swift in Sources */,
 				84C3A7892FA8601A000E1F44 /* SnippetsJournalApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -305,6 +313,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SnippetsJournal/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Snippets needs camera access to add photos to your journal";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Snippets needs photo access to add images to your journal";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -335,6 +345,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SnippetsJournal/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Snippets needs camera access to add photos to your journal";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Snippets needs photo access to add images to your journal";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

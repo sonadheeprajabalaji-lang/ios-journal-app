@@ -51,6 +51,7 @@ struct JournalEntryView: View {
     @State private var selectedCategory: ToolCategory = .pens
     @State private var selectedPen: PenTool = .ink
     @State private var penSize: Double = 16
+    @State private var selectedImage: UIImage? = nil
 
     // Text
     @State private var pageText: String = ""
@@ -133,6 +134,15 @@ struct JournalEntryView: View {
                         PagePatternView(pattern: settings.pagePattern)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
 
+                        // Selected image overlay
+                        if let image = selectedImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFit()
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .padding(16)
+                        }
+                        
                         // Text editing area
                         if isEditing || !pageText.isEmpty {
                             TextEditor(text: $pageText)
@@ -239,6 +249,9 @@ struct JournalEntryView: View {
                             onColorSelected: { color in
                                 selectedColor = color
                                 isEditing = true
+                            },
+                            onImageSelected: { image in
+                                selectedImage = image
                             }
                         )
                         .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -346,7 +359,7 @@ struct ToolsPanelView: View {
                         onColorSelected: onColorSelected
                     )
                 case .pictures:
-                    PlaceholderToolView(onImageSelected: onImageSelected)
+                    PicturesContentView(onImageSelected: onImageSelected)
                 case .tape:
                     PlaceholderToolView(icon: "scissors", label: "Tape coming soon")
                 case .stickers:
@@ -493,6 +506,114 @@ struct PlaceholderToolView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
+    }
+}
+
+// MARK: - Pictures Content
+struct PicturesContentView: View {
+    let onImageSelected: (UIImage) -> Void
+    @State private var showImagePicker = false
+    @State private var showCamera = false
+    @State private var imageSource: UIImagePickerController.SourceType = .photoLibrary
+
+    var body: some View {
+        HStack(spacing: 0) {
+            // Upload button
+            Button(action: {
+                imageSource = .photoLibrary
+                showImagePicker = true
+            }) {
+                VStack(spacing: 8) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 28, weight: .light))
+                        .foregroundColor(Color(hex: "2C2820"))
+                    Text("Upload")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(hex: "2C2820"))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+            }
+
+            // Divider
+            Rectangle()
+                .fill(Color(hex: "E8DDD0"))
+                .frame(width: 1, height: 60)
+
+            // Camera button
+            Button(action: {
+                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                    imageSource = .camera
+                    showCamera = true
+                }else {
+                    // Camera not available (simulator)
+                    print("Camera not available on this device")
+                }
+            }) {
+                VStack(spacing: 8) {
+                    Image(systemName: "camera")
+                        .font(.system(size: 28, weight: .light))
+                        .foregroundColor(Color(hex: "2C2820"))
+                    Text("Camera")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(hex: "2C2820"))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color(hex: "FDF3D2"))
+        )
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .sheet(isPresented: $showImagePicker) {
+            ImagePickerView(sourceType: .photoLibrary, onImagePicked: onImageSelected)
+        }
+        .sheet(isPresented: $showCamera) {
+            ImagePickerView(sourceType: .camera, onImagePicked: onImageSelected)
+        }
+    }
+}
+
+// MARK: - Image Picker (UIKit wrapper)
+struct ImagePickerView: UIViewControllerRepresentable {
+    let sourceType: UIImagePickerController.SourceType
+    let onImagePicked: (UIImage) -> Void
+    @Environment(\.dismiss) var dismiss
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = sourceType
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePickerView
+
+        init(_ parent: ImagePickerView) {
+            self.parent = parent
+        }
+
+        func imagePickerController(_ picker: UIImagePickerController,
+                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.onImagePicked(image)
+            }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
     }
 }
 
