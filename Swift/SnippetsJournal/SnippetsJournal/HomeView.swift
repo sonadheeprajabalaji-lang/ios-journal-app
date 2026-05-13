@@ -77,6 +77,20 @@ struct HomeView: View {
                         HStack(spacing: 10) {
                             GlassButton(icon: "magnifyingglass")
                             GlassButton(icon: "plus")
+                            // Temporary test button — remove after testing
+                                Button(action: {
+                                    NotificationManager.shared.scheduleTestNotification()
+                                }) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color(hex: "FEFAF4").opacity(0.85))
+                                            .frame(width: 44, height: 44)
+                                            .background(Circle().fill(.ultraThinMaterial))
+                                        Image(systemName: "bell")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "2C2820"))
+                                    }
+                                }
                         }
                     }
                     .padding(.horizontal, 24)
@@ -140,7 +154,7 @@ struct HomeView: View {
                                 }
                         )
                     }
-                    .frame(height: cardHeight + 10)
+                    .frame(height: cardHeight + 50)
                     .clipped()
 
                     // MARK: Page Dots
@@ -152,13 +166,13 @@ struct HomeView: View {
                                       : Color(hex: "C8B8A8"))
                                 .frame(
                                     width: index == currentJournalIndex ? 20 : 8,
-                                    height: 8
+                                    height: 10
                                 )
                                 .animation(.spring(), value: currentJournalIndex)
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 20)
+                    .padding(.vertical, 52)
                 }
             }
 
@@ -197,6 +211,13 @@ struct HomeView: View {
                     selectedTab = 0
                 }
             }
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: NSNotification.Name("NavigateToPrompt")
+            )
+        ) { _ in
+            showPrompt = true
         }
     }
 }

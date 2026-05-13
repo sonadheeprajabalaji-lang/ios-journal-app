@@ -21,6 +21,8 @@
 		84C3A7A02FA9AA3B000E1F44 /* JournalEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C3A79F2FA9AA3B000E1F44 /* JournalEntryView.swift */; };
 		84D7FC0E2FB3FC5E00E24ED0 /* PromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84D7FC0D2FB3FC5E00E24ED0 /* PromptView.swift */; };
 		84D7FC102FB4119300E24ED0 /* JournalPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84D7FC0F2FB4119300E24ED0 /* JournalPickerView.swift */; };
+		84F4DCAD2FB481A300E901B3 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F4DCAC2FB481A300E901B3 /* NotificationManager.swift */; };
+		84F4DCAF2FB4884300E901B3 /* MockCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F4DCAE2FB4884300E901B3 /* MockCameraView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +42,8 @@
 		84C3A79F2FA9AA3B000E1F44 /* JournalEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalEntryView.swift; sourceTree = "<group>"; };
 		84D7FC0D2FB3FC5E00E24ED0 /* PromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptView.swift; sourceTree = "<group>"; };
 		84D7FC0F2FB4119300E24ED0 /* JournalPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalPickerView.swift; sourceTree = "<group>"; };
+		84F4DCAC2FB481A300E901B3 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		84F4DCAE2FB4884300E901B3 /* MockCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCameraView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,7 +89,9 @@
 				8436C1742FB1B0DA008CAB4E /* ColorExtensions.swift */,
 				8436C1722FB1AC9A008CAB4E /* JournalStore.swift */,
 				84D7FC0D2FB3FC5E00E24ED0 /* PromptView.swift */,
+				84F4DCAE2FB4884300E901B3 /* MockCameraView.swift */,
 				84D7FC0F2FB4119300E24ED0 /* JournalPickerView.swift */,
+				84F4DCAC2FB481A300E901B3 /* NotificationManager.swift */,
 				8436C1702FB1A826008CAB4E /* EditJournalView.swift */,
 			);
 			path = SnippetsJournal;
@@ -175,7 +181,9 @@
 				84C3A78B2FA8601A000E1F44 /* ContentView.swift in Sources */,
 				8436C1712FB1A826008CAB4E /* EditJournalView.swift in Sources */,
 				84D7FC102FB4119300E24ED0 /* JournalPickerView.swift in Sources */,
+				84F4DCAF2FB4884300E901B3 /* MockCameraView.swift in Sources */,
 				84C3A79E2FA9A145000E1F44 /* JournalView.swift in Sources */,
+				84F4DCAD2FB481A300E901B3 /* NotificationManager.swift in Sources */,
 				8436C1752FB1B0DB008CAB4E /* ColorExtensions.swift in Sources */,
 				8436C1732FB1AC9A008CAB4E /* JournalStore.swift in Sources */,
 				8436C16F2FB16D79008CAB4E /* EditCoverView.swift in Sources */,

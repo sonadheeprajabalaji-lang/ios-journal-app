@@ -40,6 +40,7 @@ struct PromptView: View {
     @State private var showCamera = false
     @State private var capturedImage: UIImage? = nil
     @State private var showJournalPicker = false
+    @State private var showMockCamera = false
 
     var body: some View {
         ZStack {
@@ -57,6 +58,12 @@ struct PromptView: View {
         .navigationBarHidden(true)
         .sheet(isPresented: $showCamera) {
             ImagePickerView(sourceType: .camera) { image in
+                capturedImage = image
+                showJournalPicker = true
+            }
+        }
+        .sheet(isPresented: $showMockCamera) {
+            MockCameraView { image in
                 capturedImage = image
                 showJournalPicker = true
             }
@@ -190,9 +197,8 @@ struct PromptView: View {
                 if UIImagePickerController.isSourceTypeAvailable(.camera) {
                     showCamera = true
                 } else {
-                    // Simulator fallback — skip camera, go straight to journal picker
-                    capturedImage = UIImage(systemName: "photo") ?? UIImage()
-                    showJournalPicker = true
+                    // Simulator fallback — show mock camera
+                    showMockCamera = true
                 }
             case nil:         mindfulnessStep = .pause
             }

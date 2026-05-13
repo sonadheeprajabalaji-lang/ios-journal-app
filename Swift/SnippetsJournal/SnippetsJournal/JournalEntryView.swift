@@ -38,26 +38,18 @@ enum ToolCategory: String, CaseIterable {
 struct JournalEntryView: View {
     let journal: Journal
     @ObservedObject var settings: JournalSettings
+    var preloadedImage: UIImage? = nil
     @Environment(\.dismiss) var dismiss
 
-    // Colour palette
     @State private var selectedColor: Color = Color(hex: "000000")
-
-    // Page background (changed by palette when tools closed)
     @State private var pageBackgroundColor: Color = .white
-
-    // Tools panel
     @State private var showTools = false
     @State private var selectedCategory: ToolCategory = .pens
     @State private var selectedPen: PenTool = .ink
     @State private var penSize: Double = 16
     @State private var selectedImage: UIImage? = nil
-
-    // Text
     @State private var pageText: String = ""
     @State private var isEditing = false
-
-    // Page navigation
     @State private var currentPage = 0
     let totalPages = 6
 
@@ -71,7 +63,6 @@ struct JournalEntryView: View {
         Color(hex: "C9DFC9"), Color(hex: "FFFFFF"),
     ]
 
-    // Contrast hint text colour based on page background
     var hintTextColor: Color {
         let uiColor = UIColor(pageBackgroundColor)
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
@@ -80,6 +71,11 @@ struct JournalEntryView: View {
         return luminance > 0.55
             ? Color(hex: "C8B8A8")
             : Color.white.opacity(0.65)
+    }
+
+    // Use preloaded image first, then fall back to selectedImage
+    var displayImage: UIImage? {
+        preloadedImage ?? selectedImage
     }
 
     var body: some View {
@@ -106,7 +102,7 @@ struct JournalEntryView: View {
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(Color(hex: "2C2820"))
                         Spacer()
-                        Button(action: {}) {
+                        Button(action: {navigateToHome()}) {
                             ZStack {
                                 Circle()
                                     .fill(Color(hex: "FEFAF4").opacity(0.85))
@@ -130,19 +126,20 @@ struct JournalEntryView: View {
                             .fill(pageBackgroundColor)
                             .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
 
-                        // Page pattern overlay
                         PagePatternView(pattern: settings.pagePattern)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
 
-                        // Selected image overlay
-                        if let image = selectedImage {
-                            Image(uiImage: image)
+                        // Display image (preloaded or selected)
+                        if let img = displayImage {
+                            Image(uiImage: img)
                                 .resizable()
                                 .scaledToFit()
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                .padding(16)
+                                .rotationEffect(.degrees(-4))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
+                                .padding(20)
                         }
-                        
+
                         // Text editing area
                         if isEditing || !pageText.isEmpty {
                             TextEditor(text: $pageText)
@@ -151,8 +148,7 @@ struct JournalEntryView: View {
                                 .background(Color.clear)
                                 .scrollContentBackground(.hidden)
                                 .padding(16)
-                        } else {
-                            // Hint text
+                        } else if displayImage == nil {
                             VStack {
                                 Text("Click Tools to edit page")
                                     .font(.custom("Georgia", size: 14))
@@ -198,7 +194,6 @@ struct JournalEntryView: View {
 
                         Spacer()
 
-                        // Tools toggle button
                         Button(action: {
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                                 showTools.toggle()
@@ -206,7 +201,7 @@ struct JournalEntryView: View {
                         }) {
                             Text("Tools")
                                 .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(Color(hex: "2C2820"))
+                                .foregroundColor(showTools ? .white : Color(hex: "2C2820"))
                                 .padding(.horizontal, 28)
                                 .padding(.vertical, 10)
                                 .background(
@@ -216,7 +211,6 @@ struct JournalEntryView: View {
                                               : Color(hex: "FDF3D2"))
                                         .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
                                 )
-                                .foregroundColor(showTools ? .white : Color(hex: "2C2820"))
                         }
 
                         Spacer()
@@ -238,7 +232,7 @@ struct JournalEntryView: View {
                     .padding(.horizontal, 60)
                     .padding(.vertical, 12)
 
-                    // MARK: Tools Panel (slides in when showTools = true)
+                    // MARK: Tools Panel or Colour Palette
                     if showTools {
                         ToolsPanelView(
                             selectedCategory: $selectedCategory,
@@ -256,12 +250,10 @@ struct JournalEntryView: View {
                         )
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     } else {
-                        // MARK: Colour Palette (shown when tools closed)
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
                                 ForEach(paletteColors, id: \.self) { color in
                                     Button(action: {
-                                        // When tools closed, palette changes page background
                                         withAnimation {
                                             pageBackgroundColor = color
                                         }
@@ -297,6 +289,23 @@ struct JournalEntryView: View {
         .ignoresSafeArea(edges: .bottom)
         .navigationBarHidden(true)
     }
+    func navigateToHome() {
+        // Pop all the way back to root (HomeView)
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first,
+              let rootVC = window.rootViewController else { return }
+
+        // Find the navigation controller and pop to root
+        func findNavController(_ vc: UIViewController) -> UINavigationController? {
+            if let nav = vc as? UINavigationController { return nav }
+            for child in vc.children {
+                if let nav = findNavController(child) { return nav }
+            }
+            return nil
+        }
+
+        findNavController(rootVC)?.popToRootViewController(animated: true)
+    }
 }
 
 // MARK: - Tools Panel
@@ -311,8 +320,6 @@ struct ToolsPanelView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-
-            // MARK: Category tabs
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(ToolCategory.allCases, id: \.self) { category in
@@ -341,13 +348,11 @@ struct ToolsPanelView: View {
                 .padding(.vertical, 8)
             }
 
-            // Divider
             Rectangle()
                 .fill(Color(hex: "E8DDD0"))
                 .frame(height: 1)
                 .padding(.horizontal, 16)
 
-            // MARK: Category Content
             Group {
                 switch selectedCategory {
                 case .pens:
@@ -389,8 +394,6 @@ struct PensContentView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-
-            // Pen type selector
             HStack(spacing: 0) {
                 ForEach(PenTool.allCases, id: \.self) { pen in
                     Button(action: { selectedPen = pen }) {
@@ -400,7 +403,6 @@ struct PensContentView: View {
                                 .foregroundColor(selectedPen == pen
                                                  ? Color(hex: "2C2820")
                                                  : Color(hex: "A89072"))
-
                             Text(pen.rawValue)
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(selectedPen == pen
@@ -411,16 +413,12 @@ struct PensContentView: View {
                         .padding(.vertical, 10)
                         .background(
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(selectedPen == pen
-                                      ? Color.white
-                                      : Color.clear)
+                                .fill(selectedPen == pen ? Color.white : Color.clear)
                                 .shadow(color: selectedPen == pen
                                         ? .black.opacity(0.06) : .clear,
                                         radius: 4, x: 0, y: 2)
                         )
                     }
-
-                    // Vertical divider between items
                     if pen != PenTool.allCases.last {
                         Rectangle()
                             .fill(Color(hex: "E8DDD0"))
@@ -436,7 +434,6 @@ struct PensContentView: View {
             .padding(.horizontal, 12)
             .padding(.top, 12)
 
-            // Font preview
             Text("The quick brown fox")
                 .font(.custom(selectedPen.fontName, size: penSize))
                 .foregroundColor(selectedColor)
@@ -445,13 +442,11 @@ struct PensContentView: View {
                 .padding(.horizontal, 20)
                 .frame(height: 36)
 
-            // Size slider
             HStack(spacing: 12) {
                 Text("Size")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(Color(hex: "5A4A39"))
                     .frame(width: 34, alignment: .leading)
-
                 Slider(value: $penSize, in: 10...48, step: 1)
                     .accentColor(selectedColor == .white
                                  ? Color(hex: "2C2820")
@@ -459,7 +454,6 @@ struct PensContentView: View {
             }
             .padding(.horizontal, 16)
 
-            // Colour palette
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(paletteColors, id: \.self) { color in
@@ -490,7 +484,7 @@ struct PensContentView: View {
     }
 }
 
-// MARK: - Placeholder for other tool categories
+// MARK: - Placeholder Tool
 struct PlaceholderToolView: View {
     let icon: String
     let label: String
@@ -518,7 +512,6 @@ struct PicturesContentView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // Upload button
             Button(action: {
                 imageSource = .photoLibrary
                 showImagePicker = true
@@ -535,18 +528,15 @@ struct PicturesContentView: View {
                 .padding(.vertical, 24)
             }
 
-            // Divider
             Rectangle()
                 .fill(Color(hex: "E8DDD0"))
                 .frame(width: 1, height: 60)
 
-            // Camera button
             Button(action: {
                 if UIImagePickerController.isSourceTypeAvailable(.camera) {
                     imageSource = .camera
                     showCamera = true
-                }else {
-                    // Camera not available (simulator)
+                } else {
                     print("Camera not available on this device")
                 }
             }) {
@@ -577,7 +567,7 @@ struct PicturesContentView: View {
     }
 }
 
-// MARK: - Image Picker (UIKit wrapper)
+// MARK: - Image Picker
 struct ImagePickerView: UIViewControllerRepresentable {
     let sourceType: UIImagePickerController.SourceType
     let onImagePicked: (UIImage) -> Void
@@ -598,10 +588,7 @@ struct ImagePickerView: UIViewControllerRepresentable {
 
     class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
         let parent: ImagePickerView
-
-        init(_ parent: ImagePickerView) {
-            self.parent = parent
-        }
+        init(_ parent: ImagePickerView) { self.parent = parent }
 
         func imagePickerController(_ picker: UIImagePickerController,
                                    didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
@@ -625,6 +612,10 @@ struct JournalEntryView_Previews: PreviewProvider {
             coverColor: Color(hex: "C8624A"),
             stripeColor: Color(hex: "B8927A")
         )
-        JournalEntryView(journal: journal, settings: JournalSettings(journal: journal))
+        JournalEntryView(
+            journal: journal,
+            settings: JournalSettings(journal: journal),
+            preloadedImage: nil
+        )
     }
 }
