@@ -21,10 +21,12 @@ struct EditJournalView: View {
     @Environment(\.dismiss) var dismiss
     @State private var selectedPattern: PagePattern
     @State private var navigateToCover = false
+    var onSave: (() -> Void)? = nil  // ← added
 
-    init(journal: Journal, settings: JournalSettings) {
+    init(journal: Journal, settings: JournalSettings, onSave: (() -> Void)? = nil) {
         self.journal = journal
         self.settings = settings
+        self.onSave = onSave  // ← added
         _selectedPattern = State(initialValue: settings.pagePattern)
     }
 
@@ -145,7 +147,7 @@ struct EditJournalView: View {
         .ignoresSafeArea(edges: .bottom)
         .navigationBarHidden(true)
         .navigationDestination(isPresented: $navigateToCover) {
-            EditCoverView(journal: journal, settings: settings)
+            EditCoverView(journal: journal, settings: settings, onSave: onSave)  // ← pass onSave
         }
     }
 }
@@ -157,7 +159,6 @@ struct EditOpenBookView: View {
 
     var body: some View {
         ZStack {
-            // Left page
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.white)
@@ -168,7 +169,6 @@ struct EditOpenBookView: View {
             .frame(width: 155, height: 310)
             .offset(x: -79)
 
-            // Right page
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.white)
@@ -179,7 +179,6 @@ struct EditOpenBookView: View {
             .frame(width: 155, height: 310)
             .offset(x: 79)
 
-            // Spine shadow
             Rectangle()
                 .fill(
                     LinearGradient(

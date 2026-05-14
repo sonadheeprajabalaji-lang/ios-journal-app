@@ -51,6 +51,7 @@ struct JournalEntryView: View {
     @State private var pageText: String = ""
     @State private var isEditing = false
     @State private var currentPage = 0
+    @State private var showEmotionView = false
     let totalPages = 6
 
     let paletteColors: [Color] = [
@@ -73,21 +74,20 @@ struct JournalEntryView: View {
             : Color.white.opacity(0.65)
     }
 
-    // Use preloaded image first, then fall back to selectedImage
     var displayImage: UIImage? {
         preloadedImage ?? selectedImage
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            ZStack(alignment: .top) {
-                LinearGradient(
-                    colors: [Color(hex: "FFFFFF"), Color(hex: "FDE0BC")],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+        ZStack(alignment: .top) {
+            LinearGradient(
+                colors: [Color(hex: "FFFFFF"), Color(hex: "FDE0BC")],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
+            ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 0) {
 
                     // MARK: Header
@@ -102,7 +102,7 @@ struct JournalEntryView: View {
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(Color(hex: "2C2820"))
                         Spacer()
-                        Button(action: {navigateToHome()}) {
+                        Button(action: { showEmotionView = true }) {
                             ZStack {
                                 Circle()
                                     .fill(Color(hex: "FEFAF4").opacity(0.85))
@@ -120,8 +120,8 @@ struct JournalEntryView: View {
                     .padding(.top, 40)
                     .padding(.bottom, 16)
 
-                    // MARK: Page Canvas
-                    ZStack(alignment: .bottomLeading) {
+                    // MARK: Page Canvas — fixed tall height
+                    ZStack(alignment: .topLeading) {
                         RoundedRectangle(cornerRadius: 16)
                             .fill(pageBackgroundColor)
                             .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
@@ -129,7 +129,6 @@ struct JournalEntryView: View {
                         PagePatternView(pattern: settings.pagePattern)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
 
-                        // Display image (preloaded or selected)
                         if let img = displayImage {
                             Image(uiImage: img)
                                 .resizable()
@@ -140,7 +139,6 @@ struct JournalEntryView: View {
                                 .padding(20)
                         }
 
-                        // Text editing area
                         if isEditing || !pageText.isEmpty {
                             TextEditor(text: $pageText)
                                 .font(.custom(selectedPen.fontName, size: penSize))
@@ -148,33 +146,17 @@ struct JournalEntryView: View {
                                 .background(Color.clear)
                                 .scrollContentBackground(.hidden)
                                 .padding(16)
+                                .frame(height: 420)
                         } else if displayImage == nil {
-                            VStack {
-                                Text("Click Tools to edit page")
-                                    .font(.custom("Georgia", size: 14))
-                                    .foregroundColor(hintTextColor)
-                                    .padding(.top, 20)
-                                Spacer()
-                            }
-                            .frame(maxWidth: .infinity)
+                            Text("Click Tools to edit page")
+                                .font(.custom("Georgia", size: 14))
+                                .foregroundColor(hintTextColor)
+                                .padding(.top, 20)
+                                .padding(.leading, 20)
                         }
-
-                        // Prompt bubble icon
-                        Button(action: { isEditing = true }) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.white.opacity(0.3))
-                                    .frame(width: 36, height: 36)
-                                Image(systemName: "bubble.left")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(hintTextColor)
-                            }
-                        }
-                        .padding(12)
                     }
                     .padding(.horizontal, 20)
-                    .frame(height: showTools ? 280 : 420)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showTools)
+                    .frame(height: 420)  // fixed canvas height
 
                     // MARK: Tools Navigation
                     HStack(spacing: 0) {
@@ -246,6 +228,11 @@ struct JournalEntryView: View {
                             },
                             onImageSelected: { image in
                                 selectedImage = image
+                            },
+                            onClose: {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                    showTools = false
+                                }
                             }
                         )
                         .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -254,9 +241,7 @@ struct JournalEntryView: View {
                             HStack(spacing: 10) {
                                 ForEach(paletteColors, id: \.self) { color in
                                     Button(action: {
-                                        withAnimation {
-                                            pageBackgroundColor = color
-                                        }
+                                        withAnimation { pageBackgroundColor = color }
                                         selectedColor = color
                                     }) {
                                         ZStack {
@@ -283,29 +268,34 @@ struct JournalEntryView: View {
                         .background(Color(hex: "FEFAF4").opacity(0.6))
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
+
+                    // Bottom breathing room
+                    Spacer().frame(height: 40)
                 }
             }
         }
         .ignoresSafeArea(edges: .bottom)
         .navigationBarHidden(true)
-    }
-    func navigateToHome() {
-        // Pop all the way back to root (HomeView)
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let rootVC = window.rootViewController else { return }
-
-        // Find the navigation controller and pop to root
-        func findNavController(_ vc: UIViewController) -> UINavigationController? {
-            if let nav = vc as? UINavigationController { return nav }
-            for child in vc.children {
-                if let nav = findNavController(child) { return nav }
-            }
-            return nil
+        .navigationDestination(isPresented: $showEmotionView) {
+            EmotionView(journal: journal, settings: settings)
         }
-
-        findNavController(rootVC)?.popToRootViewController(animated: true)
     }
+
+//    func navigateToHome() {
+//        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+//              let window = windowScene.windows.first,
+//              let rootVC = window.rootViewController else { return }
+//
+//        func findNavController(_ vc: UIViewController) -> UINavigationController? {
+//            if let nav = vc as? UINavigationController { return nav }
+//            for child in vc.children {
+//                if let nav = findNavController(child) { return nav }
+//            }
+//            return nil
+//        }
+//
+//        findNavController(rootVC)?.popToRootViewController(animated: true)
+//    }
 }
 
 // MARK: - Tools Panel
@@ -317,11 +307,15 @@ struct ToolsPanelView: View {
     let paletteColors: [Color]
     let onColorSelected: (Color) -> Void
     let onImageSelected: (UIImage) -> Void
+    let onClose: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
+
+            // MARK: Category Scroll
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
+
                     ForEach(ToolCategory.allCases, id: \.self) { category in
                         Button(action: {
                             withAnimation(.spring(response: 0.3)) {
@@ -536,8 +530,6 @@ struct PicturesContentView: View {
                 if UIImagePickerController.isSourceTypeAvailable(.camera) {
                     imageSource = .camera
                     showCamera = true
-                } else {
-                    print("Camera not available on this device")
                 }
             }) {
                 VStack(spacing: 8) {

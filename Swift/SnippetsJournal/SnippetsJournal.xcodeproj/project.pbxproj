@@ -23,6 +23,10 @@
 		84D7FC102FB4119300E24ED0 /* JournalPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84D7FC0F2FB4119300E24ED0 /* JournalPickerView.swift */; };
 		84F4DCAD2FB481A300E901B3 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F4DCAC2FB481A300E901B3 /* NotificationManager.swift */; };
 		84F4DCAF2FB4884300E901B3 /* MockCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F4DCAE2FB4884300E901B3 /* MockCameraView.swift */; };
+		84F4DCB12FB5431400E901B3 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F4DCB02FB5431400E901B3 /* LibraryView.swift */; };
+		84F4DCB32FB5560000E901B3 /* EmotionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F4DCB22FB5560000E901B3 /* EmotionView.swift */; };
+		84F4DCB52FB5599300E901B3 /* EmotionArtView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F4DCB42FB5599300E901B3 /* EmotionArtView.swift */; };
+		84F4DCB72FB570B900E901B3 /* HomeRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F4DCB62FB570B800E901B3 /* HomeRootView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +48,10 @@
 		84D7FC0F2FB4119300E24ED0 /* JournalPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalPickerView.swift; sourceTree = "<group>"; };
 		84F4DCAC2FB481A300E901B3 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		84F4DCAE2FB4884300E901B3 /* MockCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCameraView.swift; sourceTree = "<group>"; };
+		84F4DCB02FB5431400E901B3 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		84F4DCB22FB5560000E901B3 /* EmotionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionView.swift; sourceTree = "<group>"; };
+		84F4DCB42FB5599300E901B3 /* EmotionArtView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionArtView.swift; sourceTree = "<group>"; };
+		84F4DCB62FB570B800E901B3 /* HomeRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeRootView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,11 +88,15 @@
 				84C3A79A2FA87557000E1F44 /* PatrickHand-Regular.ttf */,
 				84C3A7882FA8601A000E1F44 /* SnippetsJournalApp.swift */,
 				84C3A78A2FA8601A000E1F44 /* ContentView.swift */,
+				84F4DCB62FB570B800E901B3 /* HomeRootView.swift */,
 				84C3A78C2FA8601E000E1F44 /* Assets.xcassets */,
 				84C3A78E2FA8601E000E1F44 /* Preview Content */,
 				84C3A7962FA8727B000E1F44 /* HomeView.swift */,
 				84C3A79D2FA9A145000E1F44 /* JournalView.swift */,
+				84F4DCB02FB5431400E901B3 /* LibraryView.swift */,
 				84C3A79F2FA9AA3B000E1F44 /* JournalEntryView.swift */,
+				84F4DCB22FB5560000E901B3 /* EmotionView.swift */,
+				84F4DCB42FB5599300E901B3 /* EmotionArtView.swift */,
 				8436C16E2FB16D79008CAB4E /* EditCoverView.swift */,
 				8436C1742FB1B0DA008CAB4E /* ColorExtensions.swift */,
 				8436C1722FB1AC9A008CAB4E /* JournalStore.swift */,
@@ -176,6 +188,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84F4DCB32FB5560000E901B3 /* EmotionView.swift in Sources */,
+				84F4DCB12FB5431400E901B3 /* LibraryView.swift in Sources */,
 				84C3A7972FA8727B000E1F44 /* HomeView.swift in Sources */,
 				84C3A7A02FA9AA3B000E1F44 /* JournalEntryView.swift in Sources */,
 				84C3A78B2FA8601A000E1F44 /* ContentView.swift in Sources */,
@@ -186,9 +200,11 @@
 				84F4DCAD2FB481A300E901B3 /* NotificationManager.swift in Sources */,
 				8436C1752FB1B0DB008CAB4E /* ColorExtensions.swift in Sources */,
 				8436C1732FB1AC9A008CAB4E /* JournalStore.swift in Sources */,
+				84F4DCB52FB5599300E901B3 /* EmotionArtView.swift in Sources */,
 				8436C16F2FB16D79008CAB4E /* EditCoverView.swift in Sources */,
 				84D7FC0E2FB3FC5E00E24ED0 /* PromptView.swift in Sources */,
 				84C3A7892FA8601A000E1F44 /* SnippetsJournalApp.swift in Sources */,
+				84F4DCB72FB570B900E901B3 /* HomeRootView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -18,13 +18,15 @@ struct Journal: Identifiable {
 
 // MARK: - Home View
 struct HomeView: View {
-    @StateObject private var store = JournalStore()
+    var openPromptOnAppear: Bool = false
+    @EnvironmentObject var store: JournalStore
     @State private var selectedTab = 0
     @State private var currentJournalIndex = 1
     @GestureState private var dragOffset: CGFloat = 0
     @State private var selectedJournal: Journal? = nil
     @State private var editingJournal: Journal? = nil
     @State private var showPrompt = false
+    @State private var showLibrary = false
 
     let userName = "Olivia"
     let cardWidth: CGFloat = 275
@@ -77,20 +79,19 @@ struct HomeView: View {
                         HStack(spacing: 10) {
                             GlassButton(icon: "magnifyingglass")
                             GlassButton(icon: "plus")
-                            // Temporary test button — remove after testing
-                                Button(action: {
-                                    NotificationManager.shared.scheduleTestNotification()
-                                }) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(Color(hex: "FEFAF4").opacity(0.85))
-                                            .frame(width: 44, height: 44)
-                                            .background(Circle().fill(.ultraThinMaterial))
-                                        Image(systemName: "bell")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(Color(hex: "2C2820"))
-                                    }
+                            Button(action: {
+                                NotificationManager.shared.scheduleTestNotification()
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color(hex: "FEFAF4").opacity(0.85))
+                                        .frame(width: 44, height: 44)
+                                        .background(Circle().fill(.ultraThinMaterial))
+                                    Image(systemName: "bell")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Color(hex: "2C2820"))
                                 }
+                            }
                         }
                     }
                     .padding(.horizontal, 24)
@@ -180,35 +181,10 @@ struct HomeView: View {
         }
         .ignoresSafeArea(edges: .bottom)
         .navigationBarHidden(true)
-        // Prompt navigation
-        .navigationDestination(isPresented: $showPrompt) {
-            PromptView()
-        }
-        // Journal navigation
-        .navigationDestination(isPresented: Binding(
-            get: { selectedJournal != nil },
-            set: { if !$0 { selectedJournal = nil } }
-        )) {
-            if let journal = selectedJournal {
-                JournalView(journal: journal, settings: store.settings(for: journal))
-            }
-        }
-        // Edit journal navigation
-        .navigationDestination(isPresented: Binding(
-            get: { editingJournal != nil },
-            set: { if !$0 { editingJournal = nil } }
-        )) {
-            if let journal = editingJournal {
-                EditJournalView(journal: journal, settings: store.settings(for: journal))
-            }
-        }
-        // Prompt tab trigger
-        .onChange(of: selectedTab) { newValue in
-            if newValue == 1 {
-                showPrompt = true
-                // Reset tab so it can be tapped again next time
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    selectedTab = 0
+        .onAppear {
+            if openPromptOnAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    showPrompt = true
                 }
             }
         }
@@ -218,6 +194,46 @@ struct HomeView: View {
             )
         ) { _ in
             showPrompt = true
+        }
+        .onReceive(store.$shouldPopToHome) { should in
+            if should {
+                // Dismiss all pushed views by resetting navigation
+                showPrompt = false
+                selectedJournal = nil
+                editingJournal = nil
+                store.shouldPopToHome = false
+            }
+        }
+        .onChange(of: selectedTab) { newValue in
+            if newValue == 1 {
+                showPrompt = true
+                selectedTab = 0
+            } else if newValue == 2 {
+                showLibrary = true
+                selectedTab = 0
+            }
+        }
+        .navigationDestination(isPresented: $showPrompt) {
+            PromptView()
+        }
+        .navigationDestination(isPresented: $showLibrary) {
+            LibraryView()
+        }
+        .navigationDestination(isPresented: Binding(
+            get: { selectedJournal != nil },
+            set: { if !$0 { selectedJournal = nil } }
+        )) {
+            if let journal = selectedJournal {
+                JournalView(journal: journal, settings: store.settings(for: journal))
+            }
+        }
+        .navigationDestination(isPresented: Binding(
+            get: { editingJournal != nil },
+            set: { if !$0 { editingJournal = nil } }
+        )) {
+            if let journal = editingJournal {
+                EditJournalView(journal: journal, settings: store.settings(for: journal))
+            }
         }
     }
 }
@@ -464,18 +480,19 @@ struct TabBarView: View {
             TabBarItem(icon: "house.fill", label: "Home", isSelected: selectedTab == 0) {
                 selectedTab = 0
             }
+            // Prompt — always fires action, never stays selected
             Button(action: { selectedTab = 1 }) {
                 VStack(spacing: 4) {
-                    PromptTabIcon(
-                        color: selectedTab == 1 ? Color(hex: "2C2820") : Color(hex: "A89072")
-                    )
+                    PromptTabIcon(color: Color(hex: "A89072"))
                     Text("Prompt")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(selectedTab == 1 ? Color(hex: "2C2820") : Color(hex: "A89072"))
+                        .foregroundColor(Color(hex: "A89072"))
                 }
                 .frame(maxWidth: .infinity)
             }
-            TabBarItem(icon: "chart.bar.fill", label: "Library", isSelected: selectedTab == 2) {
+
+            // Library — always fires action, never stays selected
+            TabBarItem(icon: "chart.bar.fill", label: "Library", isSelected: false) {
                 selectedTab = 2
             }
         }
@@ -515,6 +532,9 @@ struct TabBarItem: View {
 // MARK: - Preview
 struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
-        HomeView()
+        NavigationStack {
+            HomeView()
+                .environmentObject(JournalStore())
+        }
     }
 }

@@ -1,8 +1,10 @@
 import SwiftUI
+import UserNotifications
 
 @main
 struct SnippetsJournalApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var store = JournalStore()
 
     init() {
         NotificationManager.shared.requestPermission()
@@ -11,11 +13,11 @@ struct SnippetsJournalApp: App {
     var body: some Scene {
         WindowGroup {
             SplashView()
+                .environmentObject(store)
         }
     }
 }
 
-// MARK: - App Delegate
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(
         _ application: UIApplication,

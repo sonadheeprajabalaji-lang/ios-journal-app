@@ -152,6 +152,7 @@ struct EditCoverView: View {
     let journal: Journal
     @ObservedObject var settings: JournalSettings
     @Environment(\.dismiss) var dismiss
+    var onSave: (() -> Void)? = nil  // ← added
 
     @State private var journalName: String
     @State private var isEditingName: Bool = false
@@ -159,9 +160,10 @@ struct EditCoverView: View {
     @State private var selectedPatternColor: Color
     @State private var selectedCoverPattern: CoverPattern
 
-    init(journal: Journal, settings: JournalSettings) {
+    init(journal: Journal, settings: JournalSettings, onSave: (() -> Void)? = nil) {
         self.journal = journal
         self.settings = settings
+        self.onSave = onSave  // ← added
         _journalName = State(initialValue: settings.title)
         _selectedColor = State(initialValue: settings.coverColor)
         _selectedPatternColor = State(initialValue: settings.patternColor)
@@ -207,9 +209,15 @@ struct EditCoverView: View {
                             settings.coverColor = selectedColor
                             settings.patternColor = selectedPatternColor
                             settings.coverPattern = selectedCoverPattern
-                            dismiss()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            if let onSave = onSave {
+                                // New journal flow — add to carousel then dismiss
+                                onSave()
+                            } else {
+                                // Existing journal — dismiss back to home
                                 dismiss()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                    dismiss()
+                                }
                             }
                         }) {
                             ZStack {
@@ -372,7 +380,11 @@ struct CoverPatternView: View {
                         var path = Path()
                         path.move(to: CGPoint(x: x, y: 0))
                         path.addLine(to: CGPoint(x: x, y: size.height))
-                        context.stroke(path, with: .color(patternColor.opacity(0.85)), lineWidth: stripeWidth)
+                        context.stroke(
+                            path,
+                            with: .color(patternColor.opacity(0.85)),
+                            lineWidth: stripeWidth
+                        )
                     }
                 case .checkered:
                     let cellSize: CGFloat = isThumbnail ? 10 : 24
@@ -383,7 +395,10 @@ struct CoverPatternView: View {
                         var x: CGFloat = 0
                         while x < size.width {
                             if (row + col) % 2 == 0 {
-                                context.fill(Path(CGRect(x: x, y: y, width: cellSize, height: cellSize)), with: .color(patternColor.opacity(0.75)))
+                                context.fill(
+                                    Path(CGRect(x: x, y: y, width: cellSize, height: cellSize)),
+                                    with: .color(patternColor.opacity(0.75))
+                                )
                             }
                             x += cellSize
                             col += 1
@@ -398,8 +413,16 @@ struct CoverPatternView: View {
                     while y < size.height {
                         var x: CGFloat = spacing
                         while x < size.width {
-                            let rect = CGRect(x: x - dotSize/2, y: y - dotSize/2, width: dotSize, height: dotSize)
-                            context.fill(Path(ellipseIn: rect), with: .color(patternColor.opacity(0.85)))
+                            let rect = CGRect(
+                                x: x - dotSize / 2,
+                                y: y - dotSize / 2,
+                                width: dotSize,
+                                height: dotSize
+                            )
+                            context.fill(
+                                Path(ellipseIn: rect),
+                                with: .color(patternColor.opacity(0.85))
+                            )
                             x += spacing
                         }
                         y += spacing
