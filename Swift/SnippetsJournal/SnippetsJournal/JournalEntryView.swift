@@ -156,7 +156,7 @@ struct JournalEntryView: View {
                         }
                     }
                     .padding(.horizontal, 20)
-                    .frame(height: 420)  // fixed canvas height
+                    .frame(height: 570)  // fixed canvas height
 
                     // MARK: Tools Navigation
                     HStack(spacing: 0) {

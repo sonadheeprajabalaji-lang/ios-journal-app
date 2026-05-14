@@ -52,7 +52,7 @@ struct LibraryView: View {
                             .padding(.vertical, 8)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(hex: "FEFAF4"))
+                                    .fill(Color(hex: "A89072"))
                                     .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
                             )
                             .overlay(

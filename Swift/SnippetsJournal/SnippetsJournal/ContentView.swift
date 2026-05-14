@@ -15,7 +15,11 @@ struct VignetteCurtain: View {
                     var path = Path()
                     path.move(to: CGPoint(x: x, y: 0))
                     path.addLine(to: CGPoint(x: x, y: size.height))
-                    context.stroke(path, with: .color(Color(hex: "E8C9A5").opacity(0.5)), lineWidth: stripeWidth)
+                    context.stroke(
+                        path,
+                        with: .color(Color(hex: "E8C9A5").opacity(0.5)),
+                        lineWidth: stripeWidth
+                    )
                 }
             }
             .mask(
@@ -36,6 +40,59 @@ struct VignetteCurtain: View {
     }
 }
 
+// MARK: - App Launch Screen (shown first)
+struct AppNameView: View {
+    let bgColour   = Color(hex: "FFEFDB")
+    let titleColour = Color(hex: "2C2820")
+    let mutedColour = Color(hex: "A89072")
+
+    @State private var titleOpacity: Double = 0
+    @State private var subtitleOpacity: Double = 0
+
+    var body: some View {
+        ZStack {
+            bgColour.ignoresSafeArea()
+            VignetteCurtain()
+
+            GeometryReader { geo in
+                Circle()
+                    .stroke(mutedColour.opacity(0.5), lineWidth: 1)
+                    .frame(width: 160, height: 160)
+                    .offset(x: -80, y: -80)
+                Circle()
+                    .stroke(mutedColour.opacity(0.5), lineWidth: 1)
+                    .frame(width: 160, height: 160)
+                    .offset(x: geo.size.width - 80, y: geo.size.height - 80)
+            }
+
+            VStack(spacing: 12) {
+                Text("SNIPPETS")
+                    .font(.custom("PatrickHand-Regular", size: 40))
+                    .kerning(8)
+                    .foregroundColor(titleColour)
+                    .opacity(titleOpacity)
+
+                Text("journal your world")
+                    .font(.system(size: 14, weight: .light))
+                    .italic()
+                    .foregroundColor(mutedColour)
+                    .opacity(subtitleOpacity)
+            }
+        }
+        .onAppear {
+            // Fade in title
+            withAnimation(.easeIn(duration: 0.8)) {
+                titleOpacity = 1
+            }
+            // Fade in subtitle after title
+            withAnimation(.easeIn(duration: 0.6).delay(0.6)) {
+                subtitleOpacity = 1
+            }
+        }
+    }
+}
+
+// MARK: - Today's Thought / Tap to Enter Screen
 struct SplashView: View {
     @EnvironmentObject var store: JournalStore
     @State private var showHome = false
@@ -67,7 +124,7 @@ struct SplashView: View {
 
             VStack(spacing: 0) {
                 Text("SNIPPETS")
-                    .font(.custom("Georgia", size: 22))
+                    .font(.custom("PatrickHand-Regular", size: 32))
                     .kerning(5)
                     .foregroundColor(titleColour)
                     .padding(.top, 70)
@@ -107,7 +164,6 @@ struct SplashView: View {
                     showHome = true
                 }
         }
-        .statusBarHidden(false)
         .onReceive(
             NotificationCenter.default.publisher(
                 for: NSNotification.Name("NavigateToPrompt")
@@ -123,9 +179,48 @@ struct SplashView: View {
     }
 }
 
+// MARK: - Root Entry Point
+struct AppEntryView: View {
+    @EnvironmentObject var store: JournalStore
+    @State private var showSplash = false
+    @State private var appNameOpacity: Double = 1
+
+    var body: some View {
+        ZStack {
+            // Layer 1: App name screen (shown first)
+            if !showSplash {
+                AppNameView()
+                    .opacity(appNameOpacity)
+                    .transition(.opacity)
+            }
+
+            // Layer 2: Today's thought screen (fades in after)
+            if showSplash {
+                SplashView()
+                    .transition(.opacity)
+            }
+        }
+        .onAppear {
+            // After 2 seconds, fade out app name screen
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                withAnimation(.easeOut(duration: 0.8)) {
+                    appNameOpacity = 0
+                }
+                // After fade out completes, show splash
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation(.easeIn(duration: 0.6)) {
+                        showSplash = true
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Preview
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        SplashView()
+        AppEntryView()
             .environmentObject(JournalStore())
     }
 }

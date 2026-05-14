@@ -12,7 +12,7 @@ struct SnippetsJournalApp: App {
 
     var body: some Scene {
         WindowGroup {
-            SplashView()
+            AppEntryView()
                 .environmentObject(store)
         }
     }
