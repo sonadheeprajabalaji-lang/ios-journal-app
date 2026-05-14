@@ -241,7 +241,7 @@ struct EmotionSavedView: View {
 
             GeometryReader { geo in
                 Canvas { context, size in
-                    let lineCount = 28
+                    let lineCount = 10
                     let spacing = size.width / CGFloat(lineCount)
                     for i in 0..<lineCount {
                         let x = CGFloat(i) * spacing
