@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		84192C842FB5CC26001D653C /* JournalDecorations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84192C832FB5CC26001D653C /* JournalDecorations.swift */; };
 		8436C16F2FB16D79008CAB4E /* EditCoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8436C16E2FB16D79008CAB4E /* EditCoverView.swift */; };
 		8436C1712FB1A826008CAB4E /* EditJournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8436C1702FB1A826008CAB4E /* EditJournalView.swift */; };
 		8436C1732FB1AC9A008CAB4E /* JournalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8436C1722FB1AC9A008CAB4E /* JournalStore.swift */; };
@@ -30,6 +31,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		84192C832FB5CC26001D653C /* JournalDecorations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalDecorations.swift; sourceTree = "<group>"; };
 		8436C16E2FB16D79008CAB4E /* EditCoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCoverView.swift; sourceTree = "<group>"; };
 		8436C1702FB1A826008CAB4E /* EditJournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditJournalView.swift; sourceTree = "<group>"; };
 		8436C1722FB1AC9A008CAB4E /* JournalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalStore.swift; sourceTree = "<group>"; };
@@ -98,6 +100,7 @@
 				84F4DCB22FB5560000E901B3 /* EmotionView.swift */,
 				84F4DCB42FB5599300E901B3 /* EmotionArtView.swift */,
 				8436C16E2FB16D79008CAB4E /* EditCoverView.swift */,
+				84192C832FB5CC26001D653C /* JournalDecorations.swift */,
 				8436C1742FB1B0DA008CAB4E /* ColorExtensions.swift */,
 				8436C1722FB1AC9A008CAB4E /* JournalStore.swift */,
 				84D7FC0D2FB3FC5E00E24ED0 /* PromptView.swift */,
@@ -193,6 +196,7 @@
 				84C3A7972FA8727B000E1F44 /* HomeView.swift in Sources */,
 				84C3A7A02FA9AA3B000E1F44 /* JournalEntryView.swift in Sources */,
 				84C3A78B2FA8601A000E1F44 /* ContentView.swift in Sources */,
+				84192C842FB5CC26001D653C /* JournalDecorations.swift in Sources */,
 				8436C1712FB1A826008CAB4E /* EditJournalView.swift in Sources */,
 				84D7FC102FB4119300E24ED0 /* JournalPickerView.swift in Sources */,
 				84F4DCAF2FB4884300E901B3 /* MockCameraView.swift in Sources */,

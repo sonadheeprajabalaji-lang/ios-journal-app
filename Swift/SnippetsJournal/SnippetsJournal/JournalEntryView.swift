@@ -52,6 +52,8 @@ struct JournalEntryView: View {
     @State private var isEditing = false
     @State private var currentPage = 0
     @State private var showEmotionView = false
+    @State private var placedStickers: [PlacedSticker] = []
+    @State private var placedTapes: [PlacedTape] = []
     let totalPages = 6
 
     let paletteColors: [Color] = [
@@ -128,6 +130,17 @@ struct JournalEntryView: View {
 
                         PagePatternView(pattern: settings.pagePattern)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                        ForEach($placedTapes) { tape in
+                            PlacedTapeView(tape: tape) {
+                                placedTapes.removeAll { $0.id == tape.id }
+                            }
+                        }
+                        ForEach($placedStickers) { sticker in
+                            PlacedStickerView(sticker: sticker) {
+                                placedStickers.removeAll { $0.id == sticker.id }
+                            }
+                        }
 
                         if let img = displayImage {
                             Image(uiImage: img)
@@ -229,6 +242,38 @@ struct JournalEntryView: View {
                             onImageSelected: { image in
                                 selectedImage = image
                             },
+                            onStickerSelected: { emoji in              // ← add
+                                let center = CGPoint(x: 175, y: 210)
+                                let randomOffset = CGPoint(
+                                    x: CGFloat.random(in: -60...60),
+                                    y: CGFloat.random(in: -80...80)
+                                )
+                                let rotation = Double.random(in: -15...15)
+                                placedStickers.append(PlacedSticker(
+                                    emoji: emoji,
+                                    position: CGPoint(
+                                        x: center.x + randomOffset.x,
+                                        y: center.y + randomOffset.y
+                                    ),
+                                    rotation: rotation
+                                ))
+                            },
+                            onTapeSelected: { style in                 // ← add
+                                let center = CGPoint(x: 175, y: 210)
+                                let randomOffset = CGPoint(
+                                    x: CGFloat.random(in: -40...40),
+                                    y: CGFloat.random(in: -80...80)
+                                )
+                                let rotation = Double.random(in: -8...8)
+                                placedTapes.append(PlacedTape(
+                                    style: style,
+                                    position: CGPoint(
+                                        x: center.x + randomOffset.x,
+                                        y: center.y + randomOffset.y
+                                    ),
+                                    rotation: rotation
+                                ))
+                            },
                             onClose: {
                                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                                     showTools = false
@@ -307,6 +352,8 @@ struct ToolsPanelView: View {
     let paletteColors: [Color]
     let onColorSelected: (Color) -> Void
     let onImageSelected: (UIImage) -> Void
+    let onStickerSelected: (String) -> Void      // ← add
+    let onTapeSelected: (TapeStyle) -> Void
     let onClose: () -> Void
 
     var body: some View {
@@ -360,9 +407,9 @@ struct ToolsPanelView: View {
                 case .pictures:
                     PicturesContentView(onImageSelected: onImageSelected)
                 case .tape:
-                    PlaceholderToolView(icon: "scissors", label: "Tape coming soon")
+                    TapeContentView(onTapeSelected: onTapeSelected)
                 case .stickers:
-                    PlaceholderToolView(icon: "star", label: "Stickers coming soon")
+                    StickersContentView(onStickerSelected: onStickerSelected)
                 case .notes:
                     PlaceholderToolView(icon: "note.text", label: "Notes coming soon")
                 }

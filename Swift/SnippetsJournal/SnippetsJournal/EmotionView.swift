@@ -212,7 +212,7 @@ struct EmotionView: View {
         withAnimation(.easeInOut(duration: 0.4)) {
             showSaved = true
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             store.shouldPopToHome = true
         }
     }
@@ -283,12 +283,15 @@ struct EmotionSavedView: View {
             }
             .ignoresSafeArea()
 
-            VStack(spacing: 8) {
+            VStack(spacing: 10) {
                 Text("Feeling noted")
                     .font(.system(size: 32, weight: .semibold))
                     .foregroundColor(Color(hex: "3C2E22"))
                 Text("Your emotion has been saved.")
                     .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(Color(hex: "7A6555"))
+                Text("Tap ♡ in Library to view your emotional art")
+                    .font(.system(size: 14, weight: .regular))
                     .foregroundColor(Color(hex: "7A6555"))
             }
         }
