@@ -20,16 +20,13 @@ struct EmotionView: View {
     @State private var showSaved = false
 
     let emotionColors: [Color] = [
-        Color(hex: "7A4A30"),
-        Color(hex: "306A50"),
-        Color(hex: "7C2A36"),
-        Color(hex: "1D3B5B"),
-        Color(hex: "000000"),
-        Color(hex: "C7956F"),
-        Color(hex: "C7A753"),
-        Color(hex: "90AF8B"),
-        Color(hex: "D3A5A1"),
-        Color(hex: "AF80C6"),
+        Color(hex: "7A4A30"), Color(hex: "1D3B5B"), Color(hex: "7C2A36"),
+        Color(hex: "306A50"), Color(hex: "000000"), Color(hex: "C7956F"),
+        Color(hex: "C7A753"), Color(hex: "90AF8B"), Color(hex: "9F785C"),
+        Color(hex: "2C2820"), Color(hex: "AF80C6"), Color(hex: "DE7B59"),
+        Color(hex: "7B8C6F"), Color(hex: "D3A5A1"), Color(hex: "D8C9E7"),
+        Color(hex: "E7C755"), Color(hex: "EAE0CF"), Color(hex: "F0D8D1"),
+        Color(hex: "C9DFC9"), Color(hex: "FFFFFF"),
     ]
 
     var body: some View {

@@ -169,8 +169,13 @@ struct SplashView: View {
                 for: NSNotification.Name("NavigateToPrompt")
             )
         ) { _ in
-            openPromptOnAppear = true
-            showHome = true
+            if showHome {
+                    // Home is already open — signal through the store instead
+                    store.shouldNavigateToPrompt = true
+                } else {
+                    openPromptOnAppear = true
+                    showHome = true
+                }
         }
         .fullScreenCover(isPresented: $showHome) {
             HomeRootView(openPromptOnAppear: openPromptOnAppear)

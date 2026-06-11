@@ -22,6 +22,7 @@ class JournalSettings: ObservableObject {
 class JournalStore: ObservableObject {
     @Published var settings: [UUID: JournalSettings] = [:]
     @Published var shouldPopToHome: Bool = false
+    @Published var shouldNavigateToPrompt: Bool = false
 
     func settings(for journal: Journal) -> JournalSettings {
         if let existing = settings[journal.id] {

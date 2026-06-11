@@ -15,6 +15,12 @@ struct HomeRootView: View {
                     store.shouldPopToHome = false
                 }
             }
+            .onReceive(store.$shouldNavigateToPrompt) { should in
+                if should {
+                    // Pop to root first so prompt always opens from HomeView
+                    path = NavigationPath()
+                }
+            }
         }
 }
 

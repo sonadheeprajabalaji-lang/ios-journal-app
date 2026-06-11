@@ -204,6 +204,12 @@ struct HomeView: View {
                 store.shouldPopToHome = false
             }
         }
+        .onReceive(store.$shouldNavigateToPrompt) { should in
+            if should {
+                showPrompt = true
+                store.shouldNavigateToPrompt = false
+            }
+        }
         .onChange(of: selectedTab) { newValue in
             if newValue == 1 {
                 showPrompt = true
