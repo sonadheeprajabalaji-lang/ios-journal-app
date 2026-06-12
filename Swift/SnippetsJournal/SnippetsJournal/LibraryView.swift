@@ -8,17 +8,7 @@ struct LibraryView: View {
     @State private var showEmotionArt = false
     @State private var isFavourited = false
 
-    let journals: [Journal] = [
-        Journal(title: "Vacation\nJournal",
-                coverColor: Color(hex: "7B9BB5"),
-                stripeColor: Color(hex: "6A8BA4")),
-        Journal(title: "Gratitude\nJournal",
-                coverColor: Color(hex: "C8624A"),
-                stripeColor: Color(hex: "B8927A")),
-        Journal(title: "Prompt\nJournal",
-                coverColor: Color(hex: "7A8C6E"),
-                stripeColor: Color(hex: "8A9C7E"))
-    ]
+    var journals: [Journal] { store.journals }
 
     var body: some View {
         ZStack {

@@ -1,5 +1,10 @@
 import SwiftUI
 
+struct CapturedImage: Identifiable {
+    let id = UUID()
+    let image: UIImage
+}
+
 // MARK: - Prompts Data
 struct PromptData {
     static let prompts = [
@@ -34,12 +39,13 @@ enum MindfulnessStep {
 // MARK: - Prompt View
 struct PromptView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var store: JournalStore
     @State private var currentPrompt: String = PromptData.prompts.randomElement()!
     @State private var mindfulnessStep: MindfulnessStep? = nil
     @State private var promptOpacity: Double = 1.0
     @State private var showCamera = false
-    @State private var capturedImage: UIImage? = nil
-    @State private var showJournalPicker = false
+    @State private var pendingImage: UIImage? = nil
+    @State private var capturedImage: CapturedImage? = nil
     @State private var showMockCamera = false
 
     var body: some View {
@@ -56,20 +62,19 @@ struct PromptView: View {
         }
         .animation(.easeInOut(duration: 0.6), value: mindfulnessStep)
         .navigationBarHidden(true)
-        .sheet(isPresented: $showCamera) {
+        .sheet(isPresented: $showCamera, onDismiss: presentPickerIfNeeded) {
             ImagePickerView(sourceType: .camera) { image in
-                capturedImage = image
-                showJournalPicker = true
+                pendingImage = image
             }
         }
-        .sheet(isPresented: $showMockCamera) {
+        .sheet(isPresented: $showMockCamera, onDismiss: presentPickerIfNeeded) {
             MockCameraView { image in
-                capturedImage = image
-                showJournalPicker = true
+                pendingImage = image
             }
         }
-        .fullScreenCover(isPresented: $showJournalPicker) {
-            JournalPickerView(image: capturedImage ?? UIImage(systemName: "photo") ?? UIImage())
+        .fullScreenCover(item: $capturedImage) { captured in
+            JournalPickerView(image: captured.image)
+                .environmentObject(store)
         }
     }
 
@@ -202,6 +207,13 @@ struct PromptView: View {
                 }
             case nil:         mindfulnessStep = .pause
             }
+        }
+    }
+    
+    func presentPickerIfNeeded() {
+        if let img = pendingImage {
+            capturedImage = CapturedImage(image: img)
+            pendingImage = nil
         }
     }
 }
@@ -342,6 +354,7 @@ struct MindfulnessView: View {
 // MARK: - Preview
 struct PromptView_Previews: PreviewProvider {
     static var previews: some View {
-        PromptView()
-    }
+            PromptView()
+                .environmentObject(JournalStore())
+        }
 }

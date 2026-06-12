@@ -27,23 +27,12 @@ struct HomeView: View {
     @State private var editingJournal: Journal? = nil
     @State private var showPrompt = false
     @State private var showLibrary = false
-
+    var journals: [Journal] { store.journals }
     let userName = "Olivia"
     let cardWidth: CGFloat = 275
     let cardHeight: CGFloat = 399
     let spacing: CGFloat = 16
 
-    @State private var journals: [Journal] = [
-        Journal(title: "Vacation\nJournal",
-                coverColor: Color(hex: "7B9BB5"),
-                stripeColor: Color(hex: "6A8BA4")),
-        Journal(title: "Gratitude\nJournal",
-                coverColor: Color(hex: "C8624A"),
-                stripeColor: Color(hex: "B8927A")),
-        Journal(title: "Prompt\nJournal",
-                coverColor: Color(hex: "7A8C6E"),
-                stripeColor: Color(hex: "8A9C7E"))
-    ]
 
     var dateString: String {
         let formatter = DateFormatter()

@@ -34,6 +34,15 @@ enum ToolCategory: String, CaseIterable {
     case notes    = "Notes"
 }
 
+// MARK: - Placed Photo (on canvas)
+struct PlacedPhoto: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    var position: CGPoint
+    var scale: CGFloat = 1.0
+    var rotation: Double = -4.0
+}
+
 // MARK: - Journal Entry View
 struct JournalEntryView: View {
     let journal: Journal
@@ -47,11 +56,11 @@ struct JournalEntryView: View {
     @State private var selectedCategory: ToolCategory = .pens
     @State private var selectedPen: PenTool = .ink
     @State private var penSize: Double = 16
-    @State private var selectedImage: UIImage? = nil
     @State private var pageText: String = ""
     @State private var isEditing = false
     @State private var currentPage = 0
     @State private var showEmotionView = false
+    @State private var placedPhotos: [PlacedPhoto] = []
     @State private var placedStickers: [PlacedSticker] = []
     @State private var placedTapes: [PlacedTape] = []
     let totalPages = 6
@@ -74,10 +83,6 @@ struct JournalEntryView: View {
         return luminance > 0.55
             ? Color(hex: "C8B8A8")
             : Color.white.opacity(0.65)
-    }
-
-    var displayImage: UIImage? {
-        preloadedImage ?? selectedImage
     }
 
     var body: some View {
@@ -123,6 +128,8 @@ struct JournalEntryView: View {
                     .padding(.bottom, 16)
 
                     // MARK: Page Canvas — fixed tall height
+                    // Layer order (bottom → top): page, pattern, text,
+                    // photos, tape, stickers — so decorations sit on top.
                     ZStack(alignment: .topLeading) {
                         RoundedRectangle(cornerRadius: 16)
                             .fill(pageBackgroundColor)
@@ -130,27 +137,6 @@ struct JournalEntryView: View {
 
                         PagePatternView(pattern: settings.pagePattern)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
-
-                        ForEach($placedTapes) { tape in
-                            PlacedTapeView(tape: tape) {
-                                placedTapes.removeAll { $0.id == tape.id }
-                            }
-                        }
-                        ForEach($placedStickers) { sticker in
-                            PlacedStickerView(sticker: sticker) {
-                                placedStickers.removeAll { $0.id == sticker.id }
-                            }
-                        }
-
-                        if let img = displayImage {
-                            Image(uiImage: img)
-                                .resizable()
-                                .scaledToFit()
-                                .rotationEffect(.degrees(-4))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
-                                .padding(20)
-                        }
 
                         if isEditing || !pageText.isEmpty {
                             TextEditor(text: $pageText)
@@ -160,12 +146,33 @@ struct JournalEntryView: View {
                                 .scrollContentBackground(.hidden)
                                 .padding(16)
                                 .frame(height: 420)
-                        } else if displayImage == nil {
+                        } else if placedPhotos.isEmpty {
                             Text("Click Tools to edit page")
                                 .font(.custom("Georgia", size: 14))
                                 .foregroundColor(hintTextColor)
                                 .padding(.top, 20)
                                 .padding(.leading, 20)
+                        }
+
+                        // Photos sit above the text...
+                        ForEach($placedPhotos) { photo in
+                            PlacedPhotoView(photo: photo) {
+                                placedPhotos.removeAll { $0.id == photo.id }
+                            }
+                        }
+
+                        // ...tape lies over the photos (like real washi tape)...
+                        ForEach($placedTapes) { tape in
+                            PlacedTapeView(tape: tape) {
+                                placedTapes.removeAll { $0.id == tape.id }
+                            }
+                        }
+
+                        // ...and stickers go on top of everything.
+                        ForEach($placedStickers) { sticker in
+                            PlacedStickerView(sticker: sticker) {
+                                placedStickers.removeAll { $0.id == sticker.id }
+                            }
                         }
                     }
                     .padding(.horizontal, 20)
@@ -240,9 +247,9 @@ struct JournalEntryView: View {
                                 isEditing = true
                             },
                             onImageSelected: { image in
-                                selectedImage = image
+                                addPhoto(image)
                             },
-                            onStickerSelected: { emoji in              // ← add
+                            onStickerSelected: { emoji in
                                 let center = CGPoint(x: 175, y: 210)
                                 let randomOffset = CGPoint(
                                     x: CGFloat.random(in: -60...60),
@@ -258,7 +265,7 @@ struct JournalEntryView: View {
                                     rotation: rotation
                                 ))
                             },
-                            onTapeSelected: { style in                 // ← add
+                            onTapeSelected: { style in
                                 let center = CGPoint(x: 175, y: 210)
                                 let randomOffset = CGPoint(
                                     x: CGFloat.random(in: -40...40),
@@ -321,26 +328,95 @@ struct JournalEntryView: View {
         }
         .ignoresSafeArea(edges: .bottom)
         .navigationBarHidden(true)
+        .onAppear {
+            // Turn the photo from the prompt flow into a draggable element
+            if let img = preloadedImage, placedPhotos.isEmpty {
+                placedPhotos.append(PlacedPhoto(
+                    image: img,
+                    position: CGPoint(x: 175, y: 200)
+                ))
+            }
+        }
         .navigationDestination(isPresented: $showEmotionView) {
             EmotionView(journal: journal, settings: settings)
         }
     }
 
-//    func navigateToHome() {
-//        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-//              let window = windowScene.windows.first,
-//              let rootVC = window.rootViewController else { return }
-//
-//        func findNavController(_ vc: UIViewController) -> UINavigationController? {
-//            if let nav = vc as? UINavigationController { return nav }
-//            for child in vc.children {
-//                if let nav = findNavController(child) { return nav }
-//            }
-//            return nil
-//        }
-//
-//        findNavController(rootVC)?.popToRootViewController(animated: true)
-//    }
+    func addPhoto(_ image: UIImage) {
+        let center = CGPoint(x: 175, y: 200)
+        let randomOffset = CGPoint(
+            x: CGFloat.random(in: -20...20),
+            y: CGFloat.random(in: -30...30)
+        )
+        placedPhotos.append(PlacedPhoto(
+            image: image,
+            position: CGPoint(
+                x: center.x + randomOffset.x,
+                y: center.y + randomOffset.y
+            ),
+            rotation: Double.random(in: -6...6)
+        ))
+    }
+}
+
+// MARK: - Placed Photo View (draggable + deletable)
+struct PlacedPhotoView: View {
+    @Binding var photo: PlacedPhoto
+    var onRemove: () -> Void
+
+    @State private var dragOffset: CGSize = .zero
+    @State private var showDelete = false
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Image(uiImage: photo.image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 220)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
+                .scaleEffect(photo.scale)
+                .rotationEffect(.degrees(photo.rotation))
+
+            // Delete button — shown on tap
+            if showDelete {
+                Button(action: { onRemove() }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: "2C2820"))
+                            .frame(width: 24, height: 24)
+                        Image(systemName: "xmark")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+                .offset(x: 10, y: -10)
+            }
+        }
+        .position(
+            x: photo.position.x + dragOffset.width,
+            y: photo.position.y + dragOffset.height
+        )
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    dragOffset = value.translation
+                    showDelete = false
+                }
+                .onEnded { value in
+                    photo.position = CGPoint(
+                        x: photo.position.x + value.translation.width,
+                        y: photo.position.y + value.translation.height
+                    )
+                    dragOffset = .zero
+                }
+        )
+        .onTapGesture {
+            withAnimation(.spring(response: 0.3)) {
+                showDelete.toggle()
+            }
+        }
+    }
 }
 
 // MARK: - Tools Panel
@@ -352,7 +428,7 @@ struct ToolsPanelView: View {
     let paletteColors: [Color]
     let onColorSelected: (Color) -> Void
     let onImageSelected: (UIImage) -> Void
-    let onStickerSelected: (String) -> Void      // ← add
+    let onStickerSelected: (String) -> Void
     let onTapeSelected: (TapeStyle) -> Void
     let onClose: () -> Void
 

@@ -20,16 +20,32 @@ class JournalSettings: ObservableObject {
 
 // MARK: - Journal Store
 class JournalStore: ObservableObject {
-    @Published var settings: [UUID: JournalSettings] = [:]
-    @Published var shouldPopToHome: Bool = false
-    @Published var shouldNavigateToPrompt: Bool = false
+    @Published var shouldPopToHome = false
+    @Published var shouldNavigateToPrompt = false
+
+    @Published var journals: [Journal] = [
+        Journal(title: "Vacation\nJournal",
+                coverColor: Color(hex: "7B9BB5"), stripeColor: Color(hex: "6A8BA4")),
+        Journal(title: "Gratitude\nJournal",
+                coverColor: Color(hex: "C8624A"), stripeColor: Color(hex: "B8927A")),
+        Journal(title: "Prompt\nJournal",
+                coverColor: Color(hex: "7A8C6E"), stripeColor: Color(hex: "8A9C7E"))
+    ]
+
+    private var settingsMap: [UUID: JournalSettings] = [:]
+
+    init() {
+        for journal in journals {
+            settingsMap[journal.id] = JournalSettings(journal: journal)
+        }
+    }
 
     func settings(for journal: Journal) -> JournalSettings {
-        if let existing = settings[journal.id] {
-            return existing
-        }
-        let newSettings = JournalSettings(journal: journal)
-        settings[journal.id] = newSettings
-        return newSettings
+        if let existing = settingsMap[journal.id] { return existing }
+        let s = JournalSettings(journal: journal)
+        settingsMap[journal.id] = s
+        return s
     }
+
+    var allSettings: [JournalSettings] { Array(settingsMap.values) }
 }
