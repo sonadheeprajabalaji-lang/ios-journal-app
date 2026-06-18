@@ -8,6 +8,7 @@ class JournalSettings: ObservableObject {
     @Published var pagePattern: PagePattern
     @Published var title: String
     @Published var emotionLog: [String] = []
+    @Published var pages: [JournalPage] = (0..<6).map { _ in JournalPage() }
 
     init(journal: Journal) {
         self.coverColor = journal.coverColor
@@ -15,6 +16,23 @@ class JournalSettings: ObservableObject {
         self.coverPattern = .striped
         self.pagePattern = .plain
         self.title = journal.title.replacingOccurrences(of: "\n", with: " ")
+    }
+}
+
+// MARK: - Journal Page (one page's saved content)
+struct JournalPage: Identifiable {
+    let id = UUID()
+    var text: String = ""
+    var fontName: String = "Zapfino"
+    var fontSize: Double = 16
+    var textColor: Color = Color(hex: "000000")
+    var backgroundColor: Color = .white
+    var photos: [PlacedPhoto] = []
+    var stickers: [PlacedSticker] = []
+    var tapes: [PlacedTape] = []
+
+    var isEmpty: Bool {
+        text.isEmpty && photos.isEmpty && stickers.isEmpty && tapes.isEmpty
     }
 }
 

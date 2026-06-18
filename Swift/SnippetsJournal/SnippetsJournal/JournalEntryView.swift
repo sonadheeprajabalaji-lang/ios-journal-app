@@ -48,22 +48,20 @@ struct JournalEntryView: View {
     let journal: Journal
     @ObservedObject var settings: JournalSettings
     var preloadedImage: UIImage? = nil
+    var initialPage: Int = 0
     @Environment(\.dismiss) var dismiss
 
     @State private var selectedColor: Color = Color(hex: "000000")
-    @State private var pageBackgroundColor: Color = .white
     @State private var showTools = false
     @State private var selectedCategory: ToolCategory = .pens
     @State private var selectedPen: PenTool = .ink
     @State private var penSize: Double = 16
-    @State private var pageText: String = ""
     @State private var isEditing = false
     @State private var currentPage = 0
     @State private var showEmotionView = false
-    @State private var placedPhotos: [PlacedPhoto] = []
-    @State private var placedStickers: [PlacedSticker] = []
-    @State private var placedTapes: [PlacedTape] = []
-    let totalPages = 6
+    @State private var didPlacePreloaded = false
+
+    var totalPages: Int { settings.pages.count }
 
     let paletteColors: [Color] = [
         Color(hex: "7A4A30"), Color(hex: "1D3B5B"), Color(hex: "7C2A36"),
@@ -75,8 +73,12 @@ struct JournalEntryView: View {
         Color(hex: "C9DFC9"), Color(hex: "FFFFFF"),
     ]
 
+    var page: JournalPage {
+        settings.pages[currentPage]
+    }
+
     var hintTextColor: Color {
-        let uiColor = UIColor(pageBackgroundColor)
+        let uiColor = UIColor(page.backgroundColor)
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
         let luminance = 0.299 * r + 0.587 * g + 0.114 * b
@@ -127,26 +129,24 @@ struct JournalEntryView: View {
                     .padding(.top, 40)
                     .padding(.bottom, 16)
 
-                    // MARK: Page Canvas — fixed tall height
-                    // Layer order (bottom → top): page, pattern, text,
-                    // photos, tape, stickers — so decorations sit on top.
+                    // MARK: Page Canvas — edits settings.pages[currentPage] directly
                     ZStack(alignment: .topLeading) {
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(pageBackgroundColor)
+                            .fill(page.backgroundColor)
                             .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
 
                         PagePatternView(pattern: settings.pagePattern)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
 
-                        if isEditing || !pageText.isEmpty {
-                            TextEditor(text: $pageText)
-                                .font(.custom(selectedPen.fontName, size: penSize))
-                                .foregroundColor(selectedColor)
+                        if isEditing || !page.text.isEmpty {
+                            TextEditor(text: $settings.pages[currentPage].text)
+                                .font(.custom(page.fontName, size: page.fontSize))
+                                .foregroundColor(page.textColor)
                                 .background(Color.clear)
                                 .scrollContentBackground(.hidden)
                                 .padding(16)
                                 .frame(height: 420)
-                        } else if placedPhotos.isEmpty {
+                        } else if page.photos.isEmpty {
                             Text("Click Tools to edit page")
                                 .font(.custom("Georgia", size: 14))
                                 .foregroundColor(hintTextColor)
@@ -154,34 +154,34 @@ struct JournalEntryView: View {
                                 .padding(.leading, 20)
                         }
 
-                        // Photos sit above the text...
-                        ForEach($placedPhotos) { photo in
+                        ForEach($settings.pages[currentPage].photos) { photo in
                             PlacedPhotoView(photo: photo) {
-                                placedPhotos.removeAll { $0.id == photo.id }
+                                settings.pages[currentPage].photos.removeAll { $0.id == photo.id }
                             }
                         }
 
-                        // ...tape lies over the photos (like real washi tape)...
-                        ForEach($placedTapes) { tape in
+                        ForEach($settings.pages[currentPage].tapes) { tape in
                             PlacedTapeView(tape: tape) {
-                                placedTapes.removeAll { $0.id == tape.id }
+                                settings.pages[currentPage].tapes.removeAll { $0.id == tape.id }
                             }
                         }
 
-                        // ...and stickers go on top of everything.
-                        ForEach($placedStickers) { sticker in
+                        ForEach($settings.pages[currentPage].stickers) { sticker in
                             PlacedStickerView(sticker: sticker) {
-                                placedStickers.removeAll { $0.id == sticker.id }
+                                settings.pages[currentPage].stickers.removeAll { $0.id == sticker.id }
                             }
                         }
                     }
                     .padding(.horizontal, 20)
-                    .frame(height: 570)  // fixed canvas height
+                    .frame(height: 570)
 
-                    // MARK: Tools Navigation
+                    // MARK: Page Navigation + Tools
                     HStack(spacing: 0) {
                         Button(action: {
-                            if currentPage > 0 { currentPage -= 1 }
+                            if currentPage > 0 {
+                                isEditing = false
+                                currentPage -= 1
+                            }
                         }) {
                             ZStack {
                                 Circle()
@@ -196,29 +196,37 @@ struct JournalEntryView: View {
 
                         Spacer()
 
-                        Button(action: {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                showTools.toggle()
+                        VStack(spacing: 4) {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                    showTools.toggle()
+                                }
+                            }) {
+                                Text("Tools")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(showTools ? .white : Color(hex: "2C2820"))
+                                    .padding(.horizontal, 28)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        Capsule()
+                                            .fill(showTools
+                                                  ? Color(hex: "2C2820")
+                                                  : Color(hex: "FDF3D2"))
+                                            .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
+                                    )
                             }
-                        }) {
-                            Text("Tools")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(showTools ? .white : Color(hex: "2C2820"))
-                                .padding(.horizontal, 28)
-                                .padding(.vertical, 10)
-                                .background(
-                                    Capsule()
-                                        .fill(showTools
-                                              ? Color(hex: "2C2820")
-                                              : Color(hex: "FDF3D2"))
-                                        .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
-                                )
+                            Text("Page \(currentPage + 1) of \(totalPages)")
+                                .font(.system(size: 11, weight: .light))
+                                .foregroundColor(Color(hex: "A89072"))
                         }
 
                         Spacer()
 
                         Button(action: {
-                            if currentPage < totalPages - 1 { currentPage += 1 }
+                            if currentPage < totalPages - 1 {
+                                isEditing = false
+                                currentPage += 1
+                            }
                         }) {
                             ZStack {
                                 Circle()
@@ -244,6 +252,7 @@ struct JournalEntryView: View {
                             paletteColors: paletteColors,
                             onColorSelected: { color in
                                 selectedColor = color
+                                settings.pages[currentPage].textColor = color
                                 isEditing = true
                             },
                             onImageSelected: { image in
@@ -255,14 +264,13 @@ struct JournalEntryView: View {
                                     x: CGFloat.random(in: -60...60),
                                     y: CGFloat.random(in: -80...80)
                                 )
-                                let rotation = Double.random(in: -15...15)
-                                placedStickers.append(PlacedSticker(
+                                settings.pages[currentPage].stickers.append(PlacedSticker(
                                     emoji: emoji,
                                     position: CGPoint(
                                         x: center.x + randomOffset.x,
                                         y: center.y + randomOffset.y
                                     ),
-                                    rotation: rotation
+                                    rotation: Double.random(in: -15...15)
                                 ))
                             },
                             onTapeSelected: { style in
@@ -271,14 +279,13 @@ struct JournalEntryView: View {
                                     x: CGFloat.random(in: -40...40),
                                     y: CGFloat.random(in: -80...80)
                                 )
-                                let rotation = Double.random(in: -8...8)
-                                placedTapes.append(PlacedTape(
+                                settings.pages[currentPage].tapes.append(PlacedTape(
                                     style: style,
                                     position: CGPoint(
                                         x: center.x + randomOffset.x,
                                         y: center.y + randomOffset.y
                                     ),
-                                    rotation: rotation
+                                    rotation: Double.random(in: -8...8)
                                 ))
                             },
                             onClose: {
@@ -293,7 +300,9 @@ struct JournalEntryView: View {
                             HStack(spacing: 10) {
                                 ForEach(paletteColors, id: \.self) { color in
                                     Button(action: {
-                                        withAnimation { pageBackgroundColor = color }
+                                        withAnimation {
+                                            settings.pages[currentPage].backgroundColor = color
+                                        }
                                         selectedColor = color
                                     }) {
                                         ZStack {
@@ -305,7 +314,7 @@ struct JournalEntryView: View {
                                                     .stroke(Color(hex: "E0D8D0"), lineWidth: 1)
                                                     .frame(width: 30, height: 30)
                                             }
-                                            if pageBackgroundColor == color {
+                                            if page.backgroundColor == color {
                                                 Circle()
                                                     .stroke(Color(hex: "2C2820"), lineWidth: 2)
                                                     .frame(width: 36, height: 36)
@@ -321,7 +330,6 @@ struct JournalEntryView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
 
-                    // Bottom breathing room
                     Spacer().frame(height: 40)
                 }
             }
@@ -329,18 +337,36 @@ struct JournalEntryView: View {
         .ignoresSafeArea(edges: .bottom)
         .navigationBarHidden(true)
         .onAppear {
-            // Turn the photo from the prompt flow into a draggable element
-            if let img = preloadedImage, placedPhotos.isEmpty {
-                placedPhotos.append(PlacedPhoto(
+            if preloadedImage != nil {
+                currentPage = firstEmptyPage()  // photo goes to first empty page
+            } else {
+                currentPage = min(max(initialPage, 0), settings.pages.count - 1)
+            }
+            if let img = preloadedImage, !didPlacePreloaded {
+                settings.pages[currentPage].photos.append(PlacedPhoto(
                     image: img,
                     position: CGPoint(x: 175, y: 200)
                 ))
+                didPlacePreloaded = true
             }
+        }
+        .onChange(of: selectedPen) { newPen in
+            settings.pages[currentPage].fontName = newPen.fontName
+        }
+        .onChange(of: penSize) { newSize in
+            settings.pages[currentPage].fontSize = newSize
         }
         .navigationDestination(isPresented: $showEmotionView) {
             EmotionView(journal: journal, settings: settings)
         }
     }
+
+    func firstEmptyPage() -> Int {
+            for (i, page) in settings.pages.enumerated() {
+                if page.isEmpty { return i }
+            }
+            return 0  // fallback to page 1 if none are empty
+        }
 
     func addPhoto(_ image: UIImage) {
         let center = CGPoint(x: 175, y: 200)
@@ -348,7 +374,7 @@ struct JournalEntryView: View {
             x: CGFloat.random(in: -20...20),
             y: CGFloat.random(in: -30...30)
         )
-        placedPhotos.append(PlacedPhoto(
+        settings.pages[currentPage].photos.append(PlacedPhoto(
             image: image,
             position: CGPoint(
                 x: center.x + randomOffset.x,
@@ -378,7 +404,6 @@ struct PlacedPhotoView: View {
                 .scaleEffect(photo.scale)
                 .rotationEffect(.degrees(photo.rotation))
 
-            // Delete button — shown on tap
             if showDelete {
                 Button(action: { onRemove() }) {
                     ZStack {
@@ -435,10 +460,8 @@ struct ToolsPanelView: View {
     var body: some View {
         VStack(spacing: 0) {
 
-            // MARK: Category Scroll
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-
                     ForEach(ToolCategory.allCases, id: \.self) { category in
                         Button(action: {
                             withAnimation(.spring(response: 0.3)) {

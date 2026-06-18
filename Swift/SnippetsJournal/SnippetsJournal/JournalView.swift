@@ -12,7 +12,7 @@ struct JournalView: View {
     @State private var selectedTab = 0
     @State private var showEntryView = false
 
-    let totalPages = 6
+    var totalPages: Int { settings.pages.count }
 
     enum FlipDirection {
         case forward, backward
@@ -76,9 +76,7 @@ struct JournalView: View {
                             isFlipping: $isFlipping,
                             flipDirection: $flipDirection,
                             flipProgress: $flipProgress,
-                            totalPages: totalPages,
-                            coverColor: settings.coverColor,
-                            pagePattern: settings.pagePattern,
+                            settings: settings,
                             onFlipForward: flipForward,
                             onFlipBackward: flipBackward
                         )
@@ -96,7 +94,12 @@ struct JournalView: View {
                     // MARK: Action Buttons
                     HStack(spacing: 20) {
                         ActionButton(icon: "xmark", isDark: true) { dismiss() }
-                        ActionButton(icon: "trash", isDark: false) {}
+                        ActionButton(icon: "trash", isDark: false) {
+                            // Clear the page currently shown on the left
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                settings.pages[currentPage] = JournalPage()
+                            }
+                        }
                         ActionButton(icon: "pencil", isDark: false) {
                             showEntryView = true
                         }
@@ -110,7 +113,8 @@ struct JournalView: View {
         .ignoresSafeArea(edges: .bottom)
         .navigationBarHidden(true)
         .navigationDestination(isPresented: $showEntryView) {
-            JournalEntryView(journal: journal, settings: settings)
+            // Opens the editor on the page you're currently looking at
+            JournalEntryView(journal: journal, settings: settings, initialPage: currentPage)
         }
     }
 
@@ -133,65 +137,132 @@ struct JournalView: View {
     }
 }
 
+// MARK: - Page Content Preview
+// Renders a saved JournalPage scaled down to fit a book page.
+// Positions were captured in the entry canvas's coordinate space,
+// so we scale them by the ratio between the two.
+struct PageContentPreview: View {
+    let page: JournalPage
+    let pageSize: CGSize
+
+    private var canvasSize: CGSize {
+        CGSize(width: UIScreen.main.bounds.width - 40, height: 570)
+    }
+
+    var body: some View {
+        let sx = pageSize.width / canvasSize.width
+        let sy = pageSize.height / canvasSize.height
+
+        ZStack(alignment: .topLeading) {
+            page.backgroundColor
+
+            if !page.text.isEmpty {
+                Text(page.text)
+                    .font(.custom(page.fontName, size: max(page.fontSize * sx, 7)))
+                    .foregroundColor(page.textColor)
+                    .padding(10)
+            }
+
+            ForEach(page.photos) { photo in
+                Image(uiImage: photo.image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 220 * sx)
+                    .clipShape(RoundedRectangle(cornerRadius: 12 * sx))
+                    .rotationEffect(.degrees(photo.rotation))
+                    .position(x: photo.position.x * sx, y: photo.position.y * sy)
+            }
+
+            ForEach(page.tapes) { tape in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(tape.style.color.opacity(0.85))
+                    .frame(width: 100 * sx, height: 24 * sx)
+                    .rotationEffect(.degrees(tape.rotation))
+                    .position(x: tape.position.x * sx, y: tape.position.y * sy)
+            }
+
+            ForEach(page.stickers) { sticker in
+                Text(sticker.emoji)
+                    .font(.system(size: 48 * sx))
+                    .rotationEffect(.degrees(sticker.rotation))
+                    .position(x: sticker.position.x * sx, y: sticker.position.y * sy)
+            }
+        }
+        .frame(width: pageSize.width, height: pageSize.height)
+        .clipped()
+    }
+}
+
 // MARK: - Open Book With Flip
 struct OpenBookWithFlip: View {
     @Binding var currentPage: Int
     @Binding var isFlipping: Bool
     @Binding var flipDirection: JournalView.FlipDirection
     @Binding var flipProgress: Double
-    let totalPages: Int
-    let coverColor: Color
-    let pagePattern: PagePattern
+    @ObservedObject var settings: JournalSettings
     let onFlipForward: () -> Void
     let onFlipBackward: () -> Void
 
+    let pageSize = CGSize(width: 155, height: 310)
+
+    var totalPages: Int { settings.pages.count }
+
     var body: some View {
         ZStack {
-            // LEFT page
+            // LEFT page — shows the current page's saved content
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.white)
                     .shadow(color: .black.opacity(0.08), radius: 8, x: -4, y: 4)
 
-                PagePatternView(pattern: pagePattern)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                PageContentPreview(
+                    page: settings.pages[currentPage],
+                    pageSize: pageSize
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                VStack {
-                    Spacer()
-                    if currentPage == 0 {
-                        Text("Start writing...")
-                            .font(.custom("Georgia", size: 14))
-                            .foregroundColor(Color(hex: "C8B8A8"))
-                    }
-                    Spacer()
+                PagePatternView(pattern: settings.pagePattern)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .allowsHitTesting(false)
+                    .opacity(0.6)
+
+                if settings.pages[currentPage].isEmpty {
+                    Text("Start writing...")
+                        .font(.custom("Georgia", size: 14))
+                        .foregroundColor(Color(hex: "C8B8A8"))
                 }
-                .padding(20)
             }
-            .frame(width: 155, height: 310)
+            .frame(width: pageSize.width, height: pageSize.height)
             .offset(x: -79)
             .onTapGesture { onFlipBackward() }
 
-            // RIGHT page
+            // RIGHT page — shows the next page's saved content
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.white)
                     .shadow(color: .black.opacity(0.08), radius: 8, x: 4, y: 4)
 
-                PagePatternView(pattern: pagePattern)
+                if currentPage + 1 < totalPages {
+                    PageContentPreview(
+                        page: settings.pages[currentPage + 1],
+                        pageSize: pageSize
+                    )
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                VStack {
-                    Spacer()
-                    if currentPage == totalPages - 1 {
-                        Text("End of journal")
-                            .font(.custom("Georgia", size: 14))
-                            .foregroundColor(Color(hex: "C8B8A8"))
-                    }
-                    Spacer()
+                    PagePatternView(pattern: settings.pagePattern)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .allowsHitTesting(false)
+                        .opacity(0.6)
+                } else {
+                    PagePatternView(pattern: settings.pagePattern)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    Text("End of journal")
+                        .font(.custom("Georgia", size: 14))
+                        .foregroundColor(Color(hex: "C8B8A8"))
                 }
-                .padding(20)
             }
-            .frame(width: 155, height: 310)
+            .frame(width: pageSize.width, height: pageSize.height)
             .offset(x: 79)
             .onTapGesture { onFlipForward() }
 
@@ -224,9 +295,9 @@ struct OpenBookWithFlip: View {
                             endPoint: .trailing
                         )
                     )
-                    .frame(width: 155, height: 310)
+                    .frame(width: pageSize.width, height: pageSize.height)
                     .overlay(
-                        PagePatternView(pattern: pagePattern)
+                        PagePatternView(pattern: settings.pagePattern)
                     )
                     .overlay(
                         HStack {

@@ -21,20 +21,20 @@ struct SeededRandom: RandomNumberGenerator {
 
 // MARK: - Art Element
 struct ArtElement {
-    enum ElementType { case wash, blob, disc, stroke, dot, ring }
+    enum ElementType { case wash, blob, disc, heart, star, dot, ring }
 
     let type: ElementType
     let color: Color
     let position: CGPoint        // normalised 0...1
     let size: CGFloat            // fraction of the smaller screen dimension
     let opacity: Double
-    let points: [CGPoint]        // normalised path points (strokes only)
-    let lineWidth: CGFloat
+    let lineWidth: CGFloat       // hearts/stars: 0 = filled, >0 = outlined
     let appearDelay: Double
     let appearDuration: Double
     let driftPhase: Double
     let driftSpeed: Double
     let driftAmp: CGFloat
+    var baseRotation: Double = 0 // hearts/stars: resting tilt
 }
 
 // MARK: - Emotion Art View
@@ -201,8 +201,6 @@ struct EmotionArtView: View {
                 )
 
             case .disc:
-                // Flat circle of solid colour — pops in with a bounce,
-                // then drifts and gently breathes.
                 let pop = easeOutBack(progress)
                 let breathe = 1 + 0.04 * sin(t * element.driftSpeed * 1.4 + element.driftPhase)
                 let r = element.size * minDim * CGFloat(pop) * breathe
@@ -213,38 +211,33 @@ struct EmotionArtView: View {
                     with: .color(element.color.opacity(element.opacity * eased))
                 )
 
-            case .stroke:
-                guard element.points.count > 1 else { break }
-                var path = Path()
-                let pts = element.points.map { p in
-                    CGPoint(x: p.x * size.width + drift.x,
-                            y: p.y * size.height + drift.y)
-                }
-                path.move(to: pts[0])
-                for i in 1..<pts.count {
-                    let prev = pts[i - 1]
-                    let curr = pts[i]
-                    let mid = CGPoint(x: (prev.x + curr.x) / 2, y: (prev.y + curr.y) / 2)
-                    path.addQuadCurve(to: mid, control: prev)
-                }
-                path.addLine(to: pts[pts.count - 1])
+            case .heart, .star:
+                let pop = easeOutBack(progress)
+                let sway = element.baseRotation
+                    + 0.12 * sin(t * element.driftSpeed * 1.8 + element.driftPhase)
+                let shapeSize = element.size * minDim * CGFloat(pop)
 
-                let visible = path.trimmedPath(from: 0, to: CGFloat(eased))
+                var ctx = context
+                ctx.translateBy(x: center.x, y: center.y)
+                ctx.rotate(by: .radians(sway))
 
-                if element.lineWidth >= 8 {
-                    context.stroke(
-                        visible,
-                        with: .color(element.color.opacity(element.opacity * 0.22)),
-                        style: StrokeStyle(lineWidth: element.lineWidth * 1.5,
+                let path = element.type == .heart
+                    ? heartPath(size: shapeSize)
+                    : starPath(radius: shapeSize / 2)
+
+                if element.lineWidth > 0 {
+                    ctx.stroke(
+                        path,
+                        with: .color(element.color.opacity(element.opacity * eased)),
+                        style: StrokeStyle(lineWidth: element.lineWidth,
                                            lineCap: .round, lineJoin: .round)
                     )
+                } else {
+                    ctx.fill(
+                        path,
+                        with: .color(element.color.opacity(element.opacity * eased))
+                    )
                 }
-                context.stroke(
-                    visible,
-                    with: .color(element.color.opacity(element.opacity)),
-                    style: StrokeStyle(lineWidth: element.lineWidth,
-                                       lineCap: .round, lineJoin: .round)
-                )
 
             case .ring:
                 let breathe = 1 + 0.05 * sin(t * element.driftSpeed * 1.6 + element.driftPhase)
@@ -296,6 +289,54 @@ struct EmotionArtView: View {
         )
     }
 
+    // MARK: - Shape paths (built around the origin so they can be rotated)
+    func heartPath(size: CGFloat) -> Path {
+        let w = size
+        let h = size
+        var p = Path()
+        p.move(to: CGPoint(x: 0, y: h * 0.45))
+        p.addCurve(
+            to: CGPoint(x: -w * 0.5, y: -h * 0.1),
+            control1: CGPoint(x: -w * 0.45, y: h * 0.15),
+            control2: CGPoint(x: -w * 0.5, y: h * 0.05)
+        )
+        p.addArc(
+            center: CGPoint(x: -w * 0.25, y: -h * 0.1),
+            radius: w * 0.25,
+            startAngle: .degrees(180),
+            endAngle: .degrees(0),
+            clockwise: false
+        )
+        p.addArc(
+            center: CGPoint(x: w * 0.25, y: -h * 0.1),
+            radius: w * 0.25,
+            startAngle: .degrees(180),
+            endAngle: .degrees(0),
+            clockwise: false
+        )
+        p.addCurve(
+            to: CGPoint(x: 0, y: h * 0.45),
+            control1: CGPoint(x: w * 0.5, y: h * 0.05),
+            control2: CGPoint(x: w * 0.45, y: h * 0.15)
+        )
+        p.closeSubpath()
+        return p
+    }
+
+    func starPath(radius: CGFloat, points: Int = 5) -> Path {
+        var p = Path()
+        let innerRadius = radius * 0.45
+        for i in 0..<(points * 2) {
+            let angle = (Double(i) * .pi / Double(points)) - .pi / 2
+            let r = i.isMultiple(of: 2) ? radius : innerRadius
+            let pt = CGPoint(x: CGFloat(cos(angle)) * r,
+                             y: CGFloat(sin(angle)) * r)
+            if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+        }
+        p.closeSubpath()
+        return p
+    }
+
     // MARK: - Easing
     func easeOutCubic(_ x: Double) -> Double {
         1 - pow(1 - x, 3)
@@ -330,7 +371,7 @@ struct EmotionArtView: View {
         Color(UIColor(hue: h, saturation: s, brightness: b, alpha: 1.0))
     }
 
-    // MARK: - Generation (seeded — same emotion log, same artwork)
+    // MARK: - Generation (random seed — new artwork every visit)
     func generateArt() {
         let hexes = store.allSettings.flatMap { $0.emotionLog }
 
@@ -347,49 +388,27 @@ struct EmotionArtView: View {
             .prefix(8)
             .map { Color(hex: $0) }
 
-        let seed = hexSource.joined().unicodeScalars.reduce(0) { $0 + Int($1.value) }
         var rng = SeededRandom(seed: Int.random(in: 1...Int.max))
         var elements: [ArtElement] = []
 
-        // The invisible current every stroke follows
-        let fa = rng.nextDouble(in: 1.6...2.8)
-        let fb = rng.nextDouble(in: 1.6...2.8)
-        let p1 = rng.nextDouble(in: 0...(2 * .pi))
-        let p2 = rng.nextDouble(in: 0...(2 * .pi))
-        let baseAngle = rng.nextDouble(in: 0...(2 * .pi))
-
-        func fieldAngle(_ pt: CGPoint) -> Double {
-            baseAngle
-                + 0.9 * sin(Double(pt.x) * fa * .pi + p1)
-                + 0.9 * cos(Double(pt.y) * fb * .pi + p2)
-        }
-
-        func flowStroke(from start: CGPoint, steps: Int, stepSize: CGFloat) -> [CGPoint] {
-            var pts = [start]
-            var current = start
-            for _ in 0..<steps {
-                let angle = fieldAngle(current)
-                current = CGPoint(
-                    x: current.x + CGFloat(cos(angle)) * stepSize,
-                    y: current.y + CGFloat(sin(angle)) * stepSize * 0.5
-                )
-                if current.x < 0.02 || current.x > 0.98 ||
-                   current.y < 0.02 || current.y > 0.98 { break }
-                pts.append(current)
-            }
-            return pts
-        }
-
-        var starts: [CGPoint] = []
-        for gx in 0..<5 {
-            for gy in 0..<8 {
-                starts.append(CGPoint(
-                    x: (CGFloat(gx) + 0.5) / 5 + rng.nextCGFloat(in: -0.07...0.07),
-                    y: (CGFloat(gy) + 0.5) / 8 + rng.nextCGFloat(in: -0.04...0.04)
+        // Finer jittered grid (6 x 10 = 60 spots) so confetti covers the
+        // whole canvas evenly — every major shape draws from this pool.
+        var spots: [CGPoint] = []
+        for gx in 0..<6 {
+            for gy in 0..<10 {
+                spots.append(CGPoint(
+                    x: (CGFloat(gx) + 0.5) / 6 + rng.nextCGFloat(in: -0.06...0.06),
+                    y: (CGFloat(gy) + 0.5) / 10 + rng.nextCGFloat(in: -0.035...0.035)
                 ))
             }
         }
-        starts.shuffle(using: &rng)
+        spots.shuffle(using: &rng)
+        var spotIndex = 0
+        func nextSpot() -> CGPoint {
+            let s = spots[spotIndex % spots.count]
+            spotIndex += 1
+            return s
+        }
 
         // 1. Large washes — the underpainting
         for i in 0..<5 {
@@ -400,7 +419,7 @@ struct EmotionArtView: View {
                                   y: rng.nextCGFloat(in: 0.1...0.9)),
                 size: rng.nextCGFloat(in: 0.45...0.85),
                 opacity: rng.nextDouble(in: 0.10...0.18),
-                points: [], lineWidth: 0,
+                lineWidth: 0,
                 appearDelay: rng.nextDouble(in: 0.0...0.4),
                 appearDuration: 1.4,
                 driftPhase: rng.nextDouble(in: 0...(2 * .pi)),
@@ -418,7 +437,7 @@ struct EmotionArtView: View {
                                   y: rng.nextCGFloat(in: 0.08...0.92)),
                 size: rng.nextCGFloat(in: 0.07...0.16),
                 opacity: rng.nextDouble(in: 0.14...0.26),
-                points: [], lineWidth: 0,
+                lineWidth: 0,
                 appearDelay: rng.nextDouble(in: 0.3...1.2),
                 appearDuration: 1.0,
                 driftPhase: rng.nextDouble(in: 0...(2 * .pi)),
@@ -427,17 +446,15 @@ struct EmotionArtView: View {
             ))
         }
 
-        // 3. Flat colour discs — solid filled circles, the most playful
-        // and most visibly moving layer.
-        for i in 0..<12 {
+        // 3. Flat colour discs — grid-placed for even spread
+        for i in 0..<18 {
             elements.append(ArtElement(
                 type: .disc,
                 color: palette[(i * 5 + 2) % palette.count],
-                position: CGPoint(x: rng.nextCGFloat(in: 0.06...0.94),
-                                  y: rng.nextCGFloat(in: 0.06...0.94)),
-                size: rng.nextCGFloat(in: 0.018...0.06),
+                position: nextSpot(),
+                size: rng.nextCGFloat(in: 0.015...0.055),
                 opacity: rng.nextDouble(in: 0.5...0.85),
-                points: [], lineWidth: 0,
+                lineWidth: 0,
                 appearDelay: rng.nextDouble(in: 0.8...2.2),
                 appearDuration: rng.nextDouble(in: 0.5...0.8),
                 driftPhase: rng.nextDouble(in: 0...(2 * .pi)),
@@ -446,60 +463,60 @@ struct EmotionArtView: View {
             ))
         }
 
-        // 4a. Wide soft ribbons
-        for i in 0..<8 {
-            let start = starts[i % starts.count]
+        // 4a. Hearts — mix of solid and outlined
+        for i in 0..<14 {
+            let filled = rng.nextDouble() < 0.6
             elements.append(ArtElement(
-                type: .stroke,
+                type: .heart,
                 color: palette[(i * 7 + 2) % palette.count],
-                position: start, size: 0,
-                opacity: rng.nextDouble(in: 0.22...0.34),
-                points: flowStroke(from: start, steps: 14,
-                                   stepSize: rng.nextCGFloat(in: 0.035...0.05)),
-                lineWidth: rng.nextCGFloat(in: 14...26),
-                appearDelay: rng.nextDouble(in: 0.6...1.4),
-                appearDuration: rng.nextDouble(in: 1.4...2.0),
-                driftPhase: rng.nextDouble(in: 0...(2 * .pi)),
-                driftSpeed: rng.nextDouble(in: 0.15...0.3),
-                driftAmp: rng.nextCGFloat(in: 0.002...0.005)
-            ))
-        }
-
-        // 4b. Mid brush strokes
-        for i in 0..<14 {
-            let start = starts[(i + 8) % starts.count]
-            elements.append(ArtElement(
-                type: .stroke,
-                color: palette[(i * 11 + 4) % palette.count],
-                position: start, size: 0,
-                opacity: rng.nextDouble(in: 0.45...0.65),
-                points: flowStroke(from: start, steps: 11,
-                                   stepSize: rng.nextCGFloat(in: 0.028...0.04)),
-                lineWidth: rng.nextCGFloat(in: 6...11),
-                appearDelay: rng.nextDouble(in: 1.0...2.0),
-                appearDuration: rng.nextDouble(in: 1.0...1.5),
-                driftPhase: rng.nextDouble(in: 0...(2 * .pi)),
-                driftSpeed: rng.nextDouble(in: 0.2...0.4),
-                driftAmp: rng.nextCGFloat(in: 0.002...0.005)
-            ))
-        }
-
-        // 4c. Fine lines
-        for i in 0..<14 {
-            let start = starts[(i + 22) % starts.count]
-            elements.append(ArtElement(
-                type: .stroke,
-                color: palette[(i * 13 + 6) % palette.count],
-                position: start, size: 0,
-                opacity: rng.nextDouble(in: 0.55...0.8),
-                points: flowStroke(from: start, steps: 9,
-                                   stepSize: rng.nextCGFloat(in: 0.022...0.034)),
-                lineWidth: rng.nextCGFloat(in: 1.5...3.5),
-                appearDelay: rng.nextDouble(in: 1.4...2.4),
-                appearDuration: rng.nextDouble(in: 0.8...1.2),
+                position: nextSpot(),
+                size: rng.nextCGFloat(in: 0.045...0.12),
+                opacity: rng.nextDouble(in: 0.5...0.8),
+                lineWidth: filled ? 0 : rng.nextCGFloat(in: 1.5...2.5),
+                appearDelay: rng.nextDouble(in: 0.7...2.2),
+                appearDuration: rng.nextDouble(in: 0.5...0.8),
                 driftPhase: rng.nextDouble(in: 0...(2 * .pi)),
                 driftSpeed: rng.nextDouble(in: 0.25...0.5),
-                driftAmp: rng.nextCGFloat(in: 0.001...0.004)
+                driftAmp: rng.nextCGFloat(in: 0.004...0.01),
+                baseRotation: rng.nextDouble(in: -0.35...0.35)
+            ))
+        }
+
+        // 4b. Stars — same treatment
+        for i in 0..<14 {
+            let filled = rng.nextDouble() < 0.6
+            elements.append(ArtElement(
+                type: .star,
+                color: palette[(i * 11 + 4) % palette.count],
+                position: nextSpot(),
+                size: rng.nextCGFloat(in: 0.035...0.1),
+                opacity: rng.nextDouble(in: 0.5...0.8),
+                lineWidth: filled ? 0 : rng.nextCGFloat(in: 1.5...2.5),
+                appearDelay: rng.nextDouble(in: 0.7...2.2),
+                appearDuration: rng.nextDouble(in: 0.5...0.8),
+                driftPhase: rng.nextDouble(in: 0...(2 * .pi)),
+                driftSpeed: rng.nextDouble(in: 0.25...0.5),
+                driftAmp: rng.nextCGFloat(in: 0.004...0.01),
+                baseRotation: rng.nextDouble(in: -0.5...0.5)
+            ))
+        }
+
+        // 4c. Tiny accent hearts & stars — fills the in-between spaces
+        for i in 0..<14 {
+            let isHeart = rng.nextDouble() < 0.5
+            elements.append(ArtElement(
+                type: isHeart ? .heart : .star,
+                color: palette[(i * 13 + 6) % palette.count],
+                position: nextSpot(),
+                size: rng.nextCGFloat(in: 0.015...0.032),
+                opacity: rng.nextDouble(in: 0.55...0.85),
+                lineWidth: 0,
+                appearDelay: rng.nextDouble(in: 1.4...2.6),
+                appearDuration: rng.nextDouble(in: 0.4...0.6),
+                driftPhase: rng.nextDouble(in: 0...(2 * .pi)),
+                driftSpeed: rng.nextDouble(in: 0.3...0.6),
+                driftAmp: rng.nextCGFloat(in: 0.006...0.014),
+                baseRotation: rng.nextDouble(in: -0.6...0.6)
             ))
         }
 
@@ -518,7 +535,6 @@ struct EmotionArtView: View {
                     position: ringCenter,
                     size: baseSize + CGFloat(r) * rng.nextCGFloat(in: 0.03...0.05),
                     opacity: rng.nextDouble(in: 0.3...0.55) * (r == 0 ? 1.0 : 0.6),
-                    points: [],
                     lineWidth: rng.nextCGFloat(in: 1...2.5),
                     appearDelay: rng.nextDouble(in: 0.5...2.2) + Double(r) * 0.3,
                     appearDuration: rng.nextDouble(in: 1.0...1.6),
@@ -530,9 +546,8 @@ struct EmotionArtView: View {
         }
 
         // 6. Speckles — clustered like flicked paint
-        for c in 0..<6 {
-            let clusterCenter = CGPoint(x: rng.nextCGFloat(in: 0.12...0.88),
-                                        y: rng.nextCGFloat(in: 0.12...0.88))
+        for c in 0..<8 {
+            let clusterCenter = nextSpot()
             let clusterColor = palette[(c * 9 + 3) % palette.count]
             for _ in 0..<5 {
                 elements.append(ArtElement(
@@ -544,7 +559,7 @@ struct EmotionArtView: View {
                     ),
                     size: rng.nextCGFloat(in: 0.002...0.008),
                     opacity: rng.nextDouble(in: 0.45...0.8),
-                    points: [], lineWidth: 0,
+                    lineWidth: 0,
                     appearDelay: rng.nextDouble(in: 1.8...2.8),
                     appearDuration: 0.5,
                     driftPhase: rng.nextDouble(in: 0...(2 * .pi)),

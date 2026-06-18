@@ -188,6 +188,7 @@ struct HomeView: View {
             if should {
                 // Dismiss all pushed views by resetting navigation
                 showPrompt = false
+                showLibrary = false 
                 selectedJournal = nil
                 editingJournal = nil
                 store.shouldPopToHome = false
