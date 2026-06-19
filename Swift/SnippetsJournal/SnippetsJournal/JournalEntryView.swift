@@ -174,6 +174,12 @@ struct JournalEntryView: View {
                     }
                     .padding(.horizontal, 20)
                     .frame(height: 570)
+                    .onTapGesture {
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder),
+                            to: nil, from: nil, for: nil
+                        )
+                    }
 
                     // MARK: Page Navigation + Tools
                     HStack(spacing: 0) {

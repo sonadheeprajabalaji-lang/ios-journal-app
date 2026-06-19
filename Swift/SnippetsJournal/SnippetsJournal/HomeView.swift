@@ -188,7 +188,7 @@ struct HomeView: View {
             if should {
                 // Dismiss all pushed views by resetting navigation
                 showPrompt = false
-                showLibrary = false 
+                showLibrary = false
                 selectedJournal = nil
                 editingJournal = nil
                 store.shouldPopToHome = false
@@ -494,7 +494,10 @@ struct TabBarView: View {
         }
         .padding(.top, 12)
         .padding(.bottom, 28)
-        .background(Color(hex: "FDE0BC").opacity(0.6))
+        .background(
+            Color(hex: "FDE0BC").opacity(0.6)
+                .ignoresSafeArea(edges: .bottom)
+        )
         .overlay(
             Rectangle()
                 .frame(height: 0.5)
